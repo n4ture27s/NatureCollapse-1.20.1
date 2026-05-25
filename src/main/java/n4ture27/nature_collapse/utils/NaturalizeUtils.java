@@ -34,11 +34,9 @@ public class NaturalizeUtils {
                     player.getInventory().armor.clear();
                 }
 
-                // 2. 基本的な無敵フラグと無敵時間をリセット
                 target.setInvulnerable(false);
                 target.invulnerableTime = 0;
 
-                // 3. ダメージを与える（アイテムがないのでMixinを通過する）
                 if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                     target.kill();
                     if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {

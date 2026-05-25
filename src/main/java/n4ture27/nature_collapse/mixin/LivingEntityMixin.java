@@ -40,7 +40,7 @@ public class LivingEntityMixin {
     private void onHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         var self = (LivingEntity) (Object) this;
         if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
-            cir.setReturnValue(false); // ダメージ処理そのものを無効化
+            cir.setReturnValue(false);
         }
     }
 
