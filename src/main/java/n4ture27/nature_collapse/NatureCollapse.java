@@ -1,10 +1,7 @@
 package n4ture27.nature_collapse;
 
 import com.mojang.logging.LogUtils;
-
-import n4ture27.nature_collapse.block.BlockSomeBlock;
 import n4ture27.nature_collapse.effect.ToNatural;
-import n4ture27.nature_collapse.event.RandomEvent;
 import n4ture27.nature_collapse.item.NaturaLizeSword;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.client.Minecraft;
