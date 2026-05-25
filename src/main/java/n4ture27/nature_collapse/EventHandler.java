@@ -2,6 +2,8 @@ package n4ture27.nature_collapse;
 
 import java.util.Set;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -19,6 +21,7 @@ import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 
 @Mod.EventBusSubscriber(modid = NatureCollapse.ModId, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class EventHandler {
@@ -92,13 +95,17 @@ public class EventHandler {
 
 	// ここでねいちゃーを殺す(サンキューチャッピー)
 	@SubscribeEvent(priority = EventPriority.HIGH)
-	public static void onEffectAdded(MobEffectEvent.Added ev) {
+	public static void onEffectApplicable(MobEffectEvent.Applicable ev) {
 		LivingEntity entity = ev.getEntity();
 		var effect = ev.getEffectInstance();
 		if (entity instanceof Player player) {
 			if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
-				if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
-					entity.removeEffect(effect.getEffect());
+				ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect());
+				if (effectId != null) {
+					String namespace = effectId.getNamespace();
+					if (!namespace.equals("minecraft")) {
+						ev.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+					}
 				}
 			}
 		}
