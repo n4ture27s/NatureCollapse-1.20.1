@@ -35,7 +35,6 @@ public class NaturalizeUtils {
                 }
 
                 target.setInvulnerable(false);
-                target.invulnerableTime = 0;
 
                 if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                     target.kill();
