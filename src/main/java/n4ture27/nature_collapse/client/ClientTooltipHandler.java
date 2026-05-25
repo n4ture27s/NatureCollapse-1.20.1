@@ -15,9 +15,7 @@ public class ClientTooltipHandler {
     public static void onTooltipColor(RenderTooltipEvent.Color event) {
         Item item = event.getItemStack().getItem();
         if (!event.getItemStack().isEmpty() && (item instanceof NaturaLizeSword || item instanceof NatureFlower)) {
-            // 背景色 (ARGB: 濃い緑色)
             event.setBackground(0xF0002200);
-            // 枠線の色 (ARGB: 上部を明るい緑、下部を中間的な緑に)
             event.setBorderStart(0xFF00FF00);
             event.setBorderEnd(0xFF008800);
         }
