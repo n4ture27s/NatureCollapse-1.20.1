@@ -5,6 +5,11 @@ import com.mojang.logging.LogUtils;
 import n4ture27.nature_collapse.network.UpdateRangePacket;
 import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
 import n4ture27.nature_collapse.effect.ToNatural;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
+import top.theillusivec4.curios.api.SlotTypeMessage;
+import top.theillusivec4.curios.api.SlotTypePreset;
+import net.minecraftforge.fml.ModList;
 import n4ture27.nature_collapse.item.NaturaLizeSword;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.client.Minecraft;
@@ -107,6 +112,8 @@ public class NatureCollapse {
 
 		// Register the commonSetup method for modloading
 		modEventBus.addListener(this::commonSetup);
+		// Curios integration
+		modEventBus.addListener(this::enqueueIMC);
 
 		// Register the Deferred Register to the mod event bus so blocks get registered
 		Blocks.register(modEventBus);
@@ -126,6 +133,15 @@ public class NatureCollapse {
 		// Register our mod's ForgeConfigSpec so that Forge can create and load the
 		// config file for us
 		context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+	}
+
+	private void enqueueIMC(final InterModEnqueueEvent event) {
+		if (ModList.get().isLoaded("curios")) {
+			// カスタムの"nature_flower"スロットを登録
+			InterModComms.sendTo("curios", SlotTypeMessage.REGISTER_TYPE, () -> new SlotTypeMessage.Builder("nature_flower")
+				.icon(new ResourceLocation("curios", "slot/empty_charm_slot"))
+				.build());
+		}
 	}
 
 	private void commonSetup(final FMLCommonSetupEvent event) {

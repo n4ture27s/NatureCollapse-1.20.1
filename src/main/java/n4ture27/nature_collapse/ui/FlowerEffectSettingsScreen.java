@@ -22,13 +22,17 @@ import java.util.Map;
 public class FlowerEffectSettingsScreen extends NatureBaseScreen {
     private final ItemStack stack;
     private final int slotId;
+    private final boolean isCurio;
+    private final String curiosIdentifier;
     private final Map<String, Integer> selectedEffects = new HashMap<>();
     private EffectList list;
 
-    public FlowerEffectSettingsScreen(ItemStack stack, int slotId) {
+    public FlowerEffectSettingsScreen(ItemStack stack, int slotId, boolean isCurio, String curiosIdentifier) {
         super(Component.literal("Flower Effect Settings").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
         this.stack = stack;
         this.slotId = slotId;
+        this.isCurio = isCurio;
+        this.curiosIdentifier = curiosIdentifier;
         this.loadSettings();
     }
 
@@ -69,7 +73,7 @@ public class FlowerEffectSettingsScreen extends NatureBaseScreen {
     }
 
     private void saveSettings() {
-        NatureCollapse.CHANNEL.sendToServer(new UpdateFlowerEffectsPacket(selectedEffects, slotId));
+        NatureCollapse.CHANNEL.sendToServer(new UpdateFlowerEffectsPacket(selectedEffects, slotId, isCurio, curiosIdentifier));
     }
 
     class EffectList extends ObjectSelectionList<EffectList.Entry> {

@@ -13,12 +13,16 @@ import net.minecraft.ChatFormatting;
 public class RangeAdjustmentScreen extends NatureBaseScreen {
     private final ItemStack stack;
     private final int slotId;
+    private final boolean isCurio;
+    private final String curiosIdentifier;
     private double range;
 
-    public RangeAdjustmentScreen(ItemStack stack, int slotId) {
+    public RangeAdjustmentScreen(ItemStack stack, int slotId, boolean isCurio, String curiosIdentifier) {
         super(Component.translatable("gui.nature_collapse.range_settings").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
         this.stack = stack;
         this.slotId = slotId;
+        this.isCurio = isCurio;
+        this.curiosIdentifier = curiosIdentifier;
         this.loadSettings();
     }
 
@@ -62,7 +66,7 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
     }
 
     private void saveSettings() {
-        NatureCollapse.CHANNEL.sendToServer(new UpdateRangePacket(range, slotId));
+        NatureCollapse.CHANNEL.sendToServer(new UpdateRangePacket(range, slotId, isCurio, curiosIdentifier));
     }
 
     @Override

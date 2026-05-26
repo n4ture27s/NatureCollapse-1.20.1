@@ -11,6 +11,7 @@ import net.minecraft.world.item.Items;
 import java.util.Set;
 
 import org.spongepowered.asm.mixin.Mixin;
+import n4ture27.nature_collapse.utils.InventoryUtil;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -36,7 +37,7 @@ public class PlayerMixin {
 	@Inject(method = "die", at = @At("HEAD"), cancellable = true)
     private void onDie(DamageSource source, CallbackInfo ci) {
         var self = (Player) (Object) this;
-        if (self.getInventory() != null && self.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (InventoryUtil.hasFlower(self)) {
             ci.cancel();
         }
     }

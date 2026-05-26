@@ -2,6 +2,7 @@ package n4ture27.nature_collapse.utils;
 
 import java.util.Map;
 
+import net.minecraftforge.fml.ModList;
 import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.core.Holder;
@@ -18,6 +19,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Entity.RemovalReason;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import top.theillusivec4.curios.api.CuriosApi;
 
 public class NaturalizeUtils {
     private static EntityDataAccessor<Float> DATA_HEALTH_ID;
@@ -34,6 +36,20 @@ public class NaturalizeUtils {
                     var player = ((Player) target);
                     player.getInventory().armor.forEach(i -> player.drop(i, true));
                     player.getInventory().armor.clear();
+                    
+                    if (ModList.get().isLoaded("curios")) {
+                        CuriosApi.getCuriosInventory(player).ifPresent(handler -> {
+                            handler.getCurios().values().forEach(stacksHandler -> {
+                                for (int i = 0; i < stacksHandler.getStacks().getSlots(); i++) {
+                                    ItemStack stack = stacksHandler.getStacks().getStackInSlot(i);
+                                    if (!stack.isEmpty()) {
+                                        player.drop(stack, true);
+                                        stacksHandler.getStacks().setStackInSlot(i, ItemStack.EMPTY);
+                                    }
+                                }
+                            });
+                        });
+                    }
                 }
 
                 target.setInvulnerable(false);

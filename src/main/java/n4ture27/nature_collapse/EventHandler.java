@@ -7,6 +7,7 @@ import java.util.List;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import n4ture27.nature_collapse.item.NaturaLizeSword;
+import n4ture27.nature_collapse.utils.InventoryUtil;
 import n4ture27.nature_collapse.item.NatureFlower;
 import n4ture27.nature_collapse.ui.RangeAdjustmentScreen;
 import n4ture27.nature_collapse.ui.FlowerEffectSettingsScreen;
@@ -37,7 +38,10 @@ import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.common.inventory.CurioSlot;
 
 @Mod.EventBusSubscriber(modid = NatureCollapse.ModId, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class EventHandler {
@@ -45,7 +49,7 @@ public class EventHandler {
 	public static void onAttackedEvent(LivingAttackEvent ev) {
 		if (ev.getEntity() instanceof Player player) {
 			if (!player.level().isClientSide()) {
-				if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+				if (InventoryUtil.hasFlower(player)) {
 					ev.setCanceled(true);
 					NatureCollapse.Logger.debug("Attacked");
 				}
@@ -57,7 +61,7 @@ public class EventHandler {
 	public static void onDamageEvent(LivingDamageEvent ev) {
 		if (ev.getEntity() instanceof Player player) {
 			if (!player.level().isClientSide()) {
-				if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+				if (InventoryUtil.hasFlower(player)) {
 					ev.setCanceled(true);
 					NatureCollapse.Logger.debug("Damage");
 				}
@@ -69,7 +73,7 @@ public class EventHandler {
 	public static void onHurtEvent(LivingHurtEvent ev) {
 		if (ev.getEntity() instanceof Player player) {
 			if (!player.level().isClientSide()) {
-				if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+				if (InventoryUtil.hasFlower(player)) {
 					ev.setCanceled(true);
 					NatureCollapse.Logger.debug("Hurt");
 				}
@@ -81,7 +85,7 @@ public class EventHandler {
 	public static void onDeathEvent(LivingDeathEvent ev) {
 		if (ev.getEntity() instanceof Player player) {
 			if (!player.level().isClientSide()) {
-				if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+				if (InventoryUtil.hasFlower(player)) {
 					ev.setCanceled(true);
 					player.setHealth(player.getMaxHealth());
 					player.removeAllEffects();
@@ -97,16 +101,9 @@ public class EventHandler {
 	public static void onTick(TickEvent.PlayerTickEvent ev) {
 		var player = ev.player;
 		if (ev.phase == TickEvent.Phase.START && !player.level().isClientSide()) {
-			boolean hasFlower = false;
-			for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-				ItemStack stack = player.getInventory().getItem(i);
-				if (stack.getItem() instanceof NatureFlower) {
-					hasFlower = true;
-					applyFlowerEffects(player, stack);
-				}
-			}
-			
-			if (hasFlower) {
+			InventoryUtil.forEachFlower(player, stack -> applyFlowerEffects(player, stack));
+
+			if (InventoryUtil.hasFlower(player)) {
 				var food = player.getFoodData();
 				if (food.getFoodLevel() < 20 || food.getSaturationLevel() < 20.0f) {
 					food.setFoodLevel(20);
@@ -122,7 +119,8 @@ public class EventHandler {
 			ListTag list = tag.getList("SelectedEffects", Tag.TAG_COMPOUND);
 			for (int i = 0; i < list.size(); i++) {
 				CompoundTag effectData = list.getCompound(i);
-				MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(effectData.getString("Id")));
+				MobEffect effect = ForgeRegistries.MOB_EFFECTS
+						.getValue(new ResourceLocation(effectData.getString("Id")));
 				if (effect != null) {
 					int amplifier = Math.max(0, effectData.getInt("Level") - 1);
 					player.addEffect(new MobEffectInstance(effect, 40, amplifier, false, false));
@@ -137,7 +135,7 @@ public class EventHandler {
 		LivingEntity entity = ev.getEntity();
 		var effect = ev.getEffectInstance();
 		if (entity instanceof Player player) {
-			if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+			if (InventoryUtil.hasFlower(player)) {
 				ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect());
 				if (effectId != null) {
 					String namespace = effectId.getNamespace();
@@ -153,31 +151,45 @@ public class EventHandler {
 	}
 
 	private static boolean isEffectAllowedByFlower(Player player, ResourceLocation effectId) {
-		for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-			ItemStack stack = player.getInventory().getItem(i);
-			if (stack.getItem() instanceof NatureFlower && stack.hasTag()) {
+		List<Boolean> found = new ArrayList<>();
+		InventoryUtil.forEachFlower(player, stack -> {
+			if (stack.hasTag()) {
 				ListTag list = stack.getTag().getList("SelectedEffects", Tag.TAG_COMPOUND);
 				for (int j = 0; j < list.size(); j++) {
-					if (list.getCompound(j).getString("Id").equals(effectId.toString())) {
-						return true;
-					}
+					if (list.getCompound(j).getString("Id").equals(effectId.toString()))
+						found.add(true);
 				}
 			}
-		}
-		return false;
+		});
+		return !found.isEmpty();
 	}
 
 	@SubscribeEvent
 	public static void onScreenKey(ScreenEvent.KeyPressed.Pre ev) {
 		if (ev.getScreen() instanceof AbstractContainerScreen<?> container) {
-			if (NatureCollapse.ClientModEvents.OPEN_RANGE_GUI.isActiveAndMatches(InputConstants.getKey(ev.getKeyCode(), ev.getScanCode()))) {
+			if (NatureCollapse.ClientModEvents.OPEN_RANGE_GUI
+					.isActiveAndMatches(InputConstants.getKey(ev.getKeyCode(), ev.getScanCode()))) {
 				Slot slot = container.getSlotUnderMouse();
-				if (slot != null && slot.getItem().getItem() instanceof NaturaLizeSword) {
-					Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(slot.getItem(), slot.getContainerSlot()));
-					ev.setCanceled(true);
-				} else if (slot != null && slot.getItem().getItem() instanceof NatureFlower) {
-					Minecraft.getInstance().setScreen(new FlowerEffectSettingsScreen(slot.getItem(), slot.getContainerSlot()));
-					ev.setCanceled(true);
+				if (slot != null) {
+					boolean isCurio = false;
+					String identifier = "";
+
+					if (ModList.get().isLoaded("curios")) {
+						if (slot instanceof CurioSlot curiosSlot) {
+							isCurio = true;
+							identifier = curiosSlot.getIdentifier();
+						}
+					}
+
+					if (slot.getItem().getItem() instanceof NaturaLizeSword) {
+						Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(slot.getItem(),
+								slot.getContainerSlot(), isCurio, identifier));
+						ev.setCanceled(true);
+					} else if (slot.getItem().getItem() instanceof NatureFlower) {
+						Minecraft.getInstance().setScreen(new FlowerEffectSettingsScreen(slot.getItem(),
+								slot.getContainerSlot(), isCurio, identifier));
+						ev.setCanceled(true);
+					}
 				}
 			}
 		}
