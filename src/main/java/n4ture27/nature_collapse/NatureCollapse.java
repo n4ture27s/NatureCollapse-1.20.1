@@ -2,10 +2,17 @@ package n4ture27.nature_collapse;
 
 import com.mojang.logging.LogUtils;
 
+import n4ture27.nature_collapse.network.UpdateRangePacket;
+import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
 import n4ture27.nature_collapse.effect.ToNatural;
 import n4ture27.nature_collapse.item.NaturaLizeSword;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.KeyMapping;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.effect.MobEffect;
@@ -19,6 +26,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -85,6 +93,14 @@ public class NatureCollapse {
 					.build());
 
 	public static MinecraftServer Server;
+	
+	private static final String PROTOCOL_VERSION = "1";
+	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+			new ResourceLocation(ModId, "main"),
+			() -> PROTOCOL_VERSION,
+			PROTOCOL_VERSION::equals,
+			PROTOCOL_VERSION::equals
+	);
 
 	public NatureCollapse(FMLJavaModLoadingContext context) {
 		IEventBus modEventBus = context.getModEventBus();
@@ -99,6 +115,10 @@ public class NatureCollapse {
 		// Register the Deferred Register to the mod event bus so tabs get registered
 		CreativeTabRegister.register(modEventBus);
 		EffectRegister.register(modEventBus);
+
+		int id = 0;
+		CHANNEL.registerMessage(id++, UpdateRangePacket.class, UpdateRangePacket::encode, UpdateRangePacket::new, UpdateRangePacket::handle);
+		CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
 
 		// Register ourselves for server and other game events we are interested in
 		MinecraftForge.EVENT_BUS.register(this);
@@ -132,11 +152,18 @@ public class NatureCollapse {
 	// in the class annotated with @SubscribeEvent
 	@Mod.EventBusSubscriber(modid = ModId, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 	public static class ClientModEvents {
+		public static final KeyMapping OPEN_RANGE_GUI = new KeyMapping("key.nature_collapse.open_range_gui", InputConstants.Type.KEYSYM, InputConstants.KEY_K, "key.categories.nature_collapse");
+
 		@SubscribeEvent
 		public static void onClientSetup(FMLClientSetupEvent event) {
 			// Some client setup code
 			Logger.info("HELLO FROM CLIENT SETUP");
 			Logger.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+		}
+
+		@SubscribeEvent
+		public static void onKeyRegister(RegisterKeyMappingsEvent event) {
+			event.register(OPEN_RANGE_GUI);
 		}
 	}
 }

@@ -3,6 +3,7 @@ package n4ture27.nature_collapse.item;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.utils.NaturalizeUtils;
+import n4ture27.nature_collapse.utils.RaycastUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.Registries;
@@ -57,19 +58,21 @@ public class NaturaLizeSword extends SwordItem {
 
   @Override
   public void appendHoverText(ItemStack pStack, Level level, List<Component> tooltip, TooltipFlag flag) {
+    double currentRange = pStack.getOrCreateTag().contains("CustomRange") ? pStack.getOrCreateTag().getDouble("CustomRange") : 10.0;
+    
     tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.subtext").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD, ChatFormatting.ITALIC));
-    // Shiftキーが押されている場合のみ詳細説明を表示
+
     if (Screen.hasShiftDown()) {
-      // 緑色の濃淡や色合いが滑らかに変化するアニメーション
       long time = System.currentTimeMillis();
-      float hue = (float) (0.325f + 0.05f * Math.sin(time / 600.0)); // 黄緑から深緑の間でわずかに変化
-      float brightness = (float) (0.7f + 0.3f * Math.sin(time / 400.0)); // 明るさが脈動する
+      float hue = (float) (0.325f + 0.05f * Math.sin(time / 600.0));
+      float brightness = (float) (0.7f + 0.3f * Math.sin(time / 400.0));
       int color = java.awt.Color.HSBtoRGB(hue, 0.8f, brightness);
 
       tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.desc").withStyle(style -> style.withColor(color)));
+      tooltip.add(Component.literal("Range: " + currentRange).withStyle(ChatFormatting.AQUA));
     } else {
-      // Shiftを押していない時のヒント
       tooltip.add(Component.translatable("tooltip.nature_collapse.hold_shift").withStyle(ChatFormatting.YELLOW));
+      tooltip.add(Component.literal("Press [K] to adjust range").withStyle(ChatFormatting.GOLD));
     }
     
     super.appendHoverText(pStack, level, tooltip, flag);
@@ -77,9 +80,15 @@ public class NaturaLizeSword extends SwordItem {
 
   @Override
   public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
-    var hit = ProjectileUtil.getEntityHitResult(entity, entity.getEyePosition(), entity.getEyePosition().add(entity.getLookAngle().scale(10)), entity.getBoundingBox().expandTowards(entity.getLookAngle().scale(10)).inflate(1), (entt) -> true, 100);
+    double range = stack.getOrCreateTag().contains("CustomRange") ? stack.getOrCreateTag().getDouble("CustomRange") : 10.0;
+    
+    Object hit = null;
+    if (entity instanceof Player) {
+      hit = RaycastUtil.entityRaycast((Player) entity, range);
+    }
+
     if (hit != null) {
-      var hitEntity = hit.getEntity();
+      var hitEntity = ((net.minecraft.world.phys.EntityHitResult) hit).getEntity();
       NaturalizeUtils.Naturalize(hitEntity);
     }
 

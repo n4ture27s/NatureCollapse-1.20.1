@@ -1,5 +1,10 @@
 {
-	"effect.nature_collapse.to_natural": "始まりへの帰化",
+
+	"item_group.nature_collapse" : "Nature Collapse",
+
+	"gui.nature_collapse.range_settings" : "Setting",
+
+	"effect.nature_collapse.to_natural": "To Natural",
 
 	"item.nature_collapse.naturalize_sword": "Naturalize Sword",
 	"item.nature_collapse.naturalize_sword.subtext":"「Omnia ad initium suum redeunt.」",
