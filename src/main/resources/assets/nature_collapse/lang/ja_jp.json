@@ -1,4 +1,9 @@
 {
+
+	"item_group.nature_collapse" : "自然の崩壊",
+
+	"gui.nature_collapse.range_settings" : "設定",
+	
 	"effect.nature_collapse.to_natural": "始まりへの帰化",
 
 	"item.nature_collapse.naturalize_sword": "帰化の剣",
