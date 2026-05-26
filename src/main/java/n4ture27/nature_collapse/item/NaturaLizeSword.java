@@ -3,6 +3,8 @@ package n4ture27.nature_collapse.item;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.utils.NaturalizeUtils;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -55,13 +57,20 @@ public class NaturaLizeSword extends SwordItem {
 
   @Override
   public void appendHoverText(ItemStack pStack, Level level, List<Component> tooltip, TooltipFlag flag) {
-    // 緑色の濃淡や色合いが滑らかに変化するアニメーション
-    long time = System.currentTimeMillis();
-    float hue = (float) (0.325f + 0.05f * Math.sin(time / 600.0)); // 黄緑から深緑の間でわずかに変化
-    float brightness = (float) (0.7f + 0.3f * Math.sin(time / 400.0)); // 明るさが脈動する
-    int color = java.awt.Color.HSBtoRGB(hue, 0.8f, brightness);
+    tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.subtext").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD, ChatFormatting.ITALIC));
+    // Shiftキーが押されている場合のみ詳細説明を表示
+    if (Screen.hasShiftDown()) {
+      // 緑色の濃淡や色合いが滑らかに変化するアニメーション
+      long time = System.currentTimeMillis();
+      float hue = (float) (0.325f + 0.05f * Math.sin(time / 600.0)); // 黄緑から深緑の間でわずかに変化
+      float brightness = (float) (0.7f + 0.3f * Math.sin(time / 400.0)); // 明るさが脈動する
+      int color = java.awt.Color.HSBtoRGB(hue, 0.8f, brightness);
 
-    tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.desc").withStyle(style -> style.withColor(color)));
+      tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.desc").withStyle(style -> style.withColor(color)));
+    } else {
+      // Shiftを押していない時のヒント
+      tooltip.add(Component.translatable("tooltip.nature_collapse.hold_shift").withStyle(ChatFormatting.YELLOW));
+    }
     
     super.appendHoverText(pStack, level, tooltip, flag);
   }

@@ -1,6 +1,13 @@
 {
+	"effect.nature_collapse.to_natural": "始まりへの帰化",
+
 	"item.nature_collapse.naturalize_sword": "帰化の剣",
+	"item.nature_collapse.naturalize_sword.subtext":"「Omnia ad initium suum redeunt,\nneque umquam rediri possunt.」",
 	"item.nature_collapse.naturalize_sword.desc": "自然へと帰す。",
+
 	"item.nature_collapse.nature_flower": "不変の花",
-	"item.nature_collapse.nature_flower.desc": "自然を保つ。"
+	"item.nature_collapse.nature_flower.subtext":"「Natura ipsa est immutabilis et inconcussa,\nneque quisquam eam mutare conatur.」",
+	"item.nature_collapse.nature_flower.desc": "自然を保つ。",
+	
+	"tooltip.nature_collapse.hold_shift": "[Shiftで詳細を見る]"
 }
