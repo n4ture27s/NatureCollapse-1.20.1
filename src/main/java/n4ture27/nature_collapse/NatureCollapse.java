@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 
 import n4ture27.nature_collapse.network.UpdateRangePacket;
 import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
-import n4ture27.nature_collapse.effect.ToNatural;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import top.theillusivec4.curios.api.SlotTypeMessage;
@@ -85,8 +84,6 @@ public class NatureCollapse {
 			() -> new NaturaLizeSword(new Item.Properties().fireResistant()));
 	public static final RegistryObject<NatureFlower> NatureFlower = Items.register("nature_flower",
 			() -> new NatureFlower(new Item.Properties().fireResistant()));
-	public static final RegistryObject<MobEffect> ToNaturalEffect = EffectRegister.register("to_natural",
-			() -> new ToNatural());
 	public static final RegistryObject<CreativeModeTab> CreativeTabs = CreativeTabRegister.register("example",
 			() -> CreativeModeTab.builder()
 					.title(Component.translatable("item_group." + ModId))
@@ -101,7 +98,7 @@ public class NatureCollapse {
 	
 	private static final String PROTOCOL_VERSION = "1";
 	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-			new ResourceLocation(ModId, "main"),
+			ResourceLocation.fromNamespaceAndPath(ModId, "main"),
 			() -> PROTOCOL_VERSION,
 			PROTOCOL_VERSION::equals,
 			PROTOCOL_VERSION::equals
@@ -121,7 +118,6 @@ public class NatureCollapse {
 		Items.register(modEventBus);
 		// Register the Deferred Register to the mod event bus so tabs get registered
 		CreativeTabRegister.register(modEventBus);
-		EffectRegister.register(modEventBus);
 
 		int id = 0;
 		CHANNEL.registerMessage(id++, UpdateRangePacket.class, UpdateRangePacket::encode, UpdateRangePacket::new, UpdateRangePacket::handle);
@@ -137,9 +133,8 @@ public class NatureCollapse {
 
 	private void enqueueIMC(final InterModEnqueueEvent event) {
 		if (ModList.get().isLoaded("curios")) {
-			// カスタムの"nature_flower"スロットを登録
-			InterModComms.sendTo("curios", SlotTypeMessage.REGISTER_TYPE, () -> new SlotTypeMessage.Builder("nature_flower")
-				.icon(new ResourceLocation("curios", "slot/empty_charm_slot"))
+			InterModComms.sendTo("curios", "register_type", () -> new SlotTypeMessage.Builder("nature_flower")
+				.icon(ResourceLocation.fromNamespaceAndPath("curios", "slot/empty_charm_slot"))
 				.build());
 		}
 	}

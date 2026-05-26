@@ -8,6 +8,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import n4ture27.nature_collapse.item.NaturaLizeSword;
 import n4ture27.nature_collapse.utils.InventoryUtil;
+import n4ture27.nature_collapse.utils.INaturalizable;
 import n4ture27.nature_collapse.item.NatureFlower;
 import n4ture27.nature_collapse.ui.RangeAdjustmentScreen;
 import n4ture27.nature_collapse.ui.FlowerEffectSettingsScreen;
@@ -93,6 +94,10 @@ public class EventHandler {
 					player.hurtDuration = 20;
 					player.hurtTime = 20;
 				}
+                // If the player actually dies (not cancelled by flower protection), reset naturalized state
+                if (!ev.isCanceled() && ((INaturalizable) player).nature_collapse$isNaturalized()) {
+                    ((INaturalizable) player).nature_collapse$setNaturalized(false);
+                }
 			}
 		}
 	}
@@ -120,7 +125,7 @@ public class EventHandler {
 			for (int i = 0; i < list.size(); i++) {
 				CompoundTag effectData = list.getCompound(i);
 				MobEffect effect = ForgeRegistries.MOB_EFFECTS
-						.getValue(new ResourceLocation(effectData.getString("Id")));
+						.getValue(ResourceLocation.tryParse(effectData.getString("Id")));
 				if (effect != null) {
 					int amplifier = Math.max(0, effectData.getInt("Level") - 1);
 					player.addEffect(new MobEffectInstance(effect, 40, amplifier, false, false));
@@ -135,7 +140,7 @@ public class EventHandler {
 		LivingEntity entity = ev.getEntity();
 		var effect = ev.getEffectInstance();
 		if (entity instanceof Player player) {
-			if (InventoryUtil.hasFlower(player)) {
+			if (InventoryUtil.hasFlower(player) && !((INaturalizable) player).nature_collapse$isNaturalized()) {
 				ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect());
 				if (effectId != null) {
 					String namespace = effectId.getNamespace();

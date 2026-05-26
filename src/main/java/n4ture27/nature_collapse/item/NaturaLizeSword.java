@@ -52,7 +52,6 @@ public class NaturaLizeSword extends SwordItem {
 
     if (!pTarget.isAlive()) return super.hurtEnemy(pStack, pTarget, pAttacker);
     NaturalizeUtils.Naturalize(pTarget);
-    pTarget.addEffect(new MobEffectInstance(NatureCollapse.ToNaturalEffect.get(), 100/*ticks*/));
     return super.hurtEnemy(pStack, pTarget, pAttacker);
   }
 

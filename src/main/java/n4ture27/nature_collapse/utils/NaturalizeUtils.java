@@ -7,7 +7,6 @@ import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.damagesource.DamageType;
@@ -22,8 +21,6 @@ import net.minecraft.world.item.ItemStack;
 import top.theillusivec4.curios.api.CuriosApi;
 
 public class NaturalizeUtils {
-    private static EntityDataAccessor<Float> DATA_HEALTH_ID;
-
     public static void Naturalize(Entity targetEntity) {
         Holder<DamageType> holder = targetEntity.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
                 .getHolderOrThrow(DamageTypes.GENERIC_KILL);
@@ -54,14 +51,13 @@ public class NaturalizeUtils {
 
                 target.setInvulnerable(false);
 
-                target.addEffect(new MobEffectInstance(NatureCollapse.ToNaturalEffect.get(), 200, 1, false, false));
+                ((INaturalizable) target).nature_collapse$setNaturalized(true);
 
                 if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                     target.kill();
                     if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                         target.die(target.damageSources().genericKill());
                         if (!target.isDeadOrDying() || target.isAlive()) {
-                            target.getEntityData().set(DATA_HEALTH_ID, 0f);
                             target.setHealth(0);
                         }
                     }

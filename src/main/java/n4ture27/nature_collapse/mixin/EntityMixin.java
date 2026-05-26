@@ -2,6 +2,7 @@ package n4ture27.nature_collapse.mixin;
 
 import n4ture27.nature_collapse.NatureCollapse;
 import net.minecraft.world.damagesource.DamageSource;
+import n4ture27.nature_collapse.utils.INaturalizable;
 import n4ture27.nature_collapse.utils.InventoryUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,7 +24,7 @@ public abstract class EntityMixin {
         Entity self = (Entity) (Object) this;
 
         if (self instanceof LivingEntity living) {
-            if (living.hasEffect(NatureCollapse.ToNaturalEffect.get())) {
+            if (((INaturalizable) living).nature_collapse$isNaturalized()) {
                 cir.setReturnValue(false);
                 return;
             }
