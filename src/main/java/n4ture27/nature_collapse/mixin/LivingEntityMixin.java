@@ -3,6 +3,7 @@ package n4ture27.nature_collapse.mixin;
 import java.util.Set;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,15 +26,15 @@ import net.minecraft.world.entity.Entity.RemovalReason;
 
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
-    @Shadow
-    private static final EntityDataAccessor<Float> DATA_HEALTH_ID = SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.FLOAT);
+    @Shadow @Final
+    private static EntityDataAccessor<Float> DATA_HEALTH_ID;
 
     @Overwrite
 	public float getHealth() {
         var self = (LivingEntity) (Object) this;
 
         if (self instanceof Player player){
-            if (player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+            if (player.getInventory() != null && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
                 return player.getMaxHealth();
             }
         }
@@ -43,7 +44,7 @@ public class LivingEntityMixin {
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     private void onHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         var self = (LivingEntity) (Object) this;
-        if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (self instanceof Player player && player.getInventory() != null && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
             cir.setReturnValue(false);
         }
     }
@@ -51,7 +52,7 @@ public class LivingEntityMixin {
     @Inject(method = "die", at = @At("HEAD"), cancellable = true)
     private void onDie(DamageSource source, CallbackInfo ci) {
         var self = (LivingEntity) (Object) this;
-        if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (self instanceof Player player && player.getInventory() != null && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
             ci.cancel();
         }
     }
@@ -59,7 +60,7 @@ public class LivingEntityMixin {
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     private void onSetHealth(float health, CallbackInfo ci) {
         var self = (LivingEntity) (Object) this;
-        if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (self instanceof Player player && player.getInventory() != null && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
             // 体力を減らそうとする操作（現在の最大体力未満に設定しようとする場合）をキャンセル
             if (health < player.getMaxHealth()) {
                 ci.cancel();
@@ -67,18 +68,10 @@ public class LivingEntityMixin {
         }
     }
 
-    @Inject(method = "isInvulnerableTo", at = @At("HEAD"), cancellable = true)
-    private void onIsInvulnerableTo(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
-        var self = (LivingEntity) (Object) this;
-        if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
-            cir.setReturnValue(true);
-        }
-    }
-
     @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
     private void onRemove(RemovalReason reason, CallbackInfo ci) {
         var self = (LivingEntity) (Object) this;
-        if (self instanceof Player player && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (self instanceof Player player && player.getInventory() != null && player.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
             if (reason == RemovalReason.KILLED) {
                 ci.cancel();
             }

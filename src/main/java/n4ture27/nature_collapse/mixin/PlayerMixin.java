@@ -36,7 +36,7 @@ public class PlayerMixin {
 	@Inject(method = "die", at = @At("HEAD"), cancellable = true)
     private void onDie(DamageSource source, CallbackInfo ci) {
         var self = (Player) (Object) this;
-        if (self.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
+        if (self.getInventory() != null && self.getInventory().hasAnyOf(Set.of(NatureCollapse.NatureFlower.get()))) {
             ci.cancel();
         }
     }

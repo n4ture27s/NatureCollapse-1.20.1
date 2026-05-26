@@ -2,6 +2,7 @@ package n4ture27.nature_collapse.utils;
 
 import java.util.Map;
 
+import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.item.NatureFlower;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -10,6 +11,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
@@ -35,6 +37,8 @@ public class NaturalizeUtils {
                 }
 
                 target.setInvulnerable(false);
+
+                target.addEffect(new MobEffectInstance(NatureCollapse.ToNaturalEffect.get(), 200, 1, false, false));
 
                 if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                     target.kill();
