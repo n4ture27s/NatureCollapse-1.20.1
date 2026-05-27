@@ -27,6 +27,11 @@ public class NaturalizeUtils {
         DamageSource source = new DamageSource(holder);
 
         if (targetEntity instanceof LivingEntity target) {
+            // プレイヤーが nature_flower を持っている場合は、脆弱化処理を完全に無視する
+            if (target instanceof Player player && InventoryUtil.hasFlower(player)) {
+                return;
+            }
+
             if (!target.level().isClientSide()) {
                 target.invulnerableTime = 0;
                 if (target instanceof Player) {
@@ -51,18 +56,8 @@ public class NaturalizeUtils {
 
                 target.setInvulnerable(false);
 
-                ((INaturalizable) target).nature_collapse$setNaturalized(true);
-
-                if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
-                    target.kill();
-                    if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
-                        target.die(target.damageSources().genericKill());
-                        if (!target.isDeadOrDying() || target.isAlive()) {
-                            ((INaturalizable) target).nature_collapse$setHealthForced(0);
-                        }
-                    }
-                }
-
+                // Trigger the specialized instant kill logic
+                ((INaturalizable) target).nature_collapse$instantKill(null, source);
             }
         } else {
             targetEntity.remove(RemovalReason.DISCARDED);

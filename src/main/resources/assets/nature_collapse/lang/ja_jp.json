@@ -2,7 +2,10 @@
 
 	"item_group.nature_collapse" : "自然の崩壊",
 
-	"gui.nature_collapse.range_settings" : "設定",
+	"gui.nature_collapse.range_settings" : "レンジ設定",
+
+	"gui.nature_collapse.flower_settings" : "エフェクト設定",
+	"gui.nature_collapse.search_effect" : "検索",
 	
 	"effect.nature_collapse.to_natural": "始まりへの帰化",
 

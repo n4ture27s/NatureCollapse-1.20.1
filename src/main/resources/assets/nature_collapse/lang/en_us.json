@@ -2,7 +2,9 @@
 
 	"item_group.nature_collapse" : "Nature Collapse",
 
-	"gui.nature_collapse.range_settings" : "Setting",
+	"gui.nature_collapse.range_settings" : "Range Setting",
+	"gui.nature_collapse.flower_settings" : "Flower Setting",
+	"gui.nature_collapse.search_effect" : "Search",
 
 	"effect.nature_collapse.to_natural": "To Natural",
 

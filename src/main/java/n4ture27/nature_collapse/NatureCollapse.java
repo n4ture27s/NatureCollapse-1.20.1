@@ -122,6 +122,7 @@ public class NatureCollapse {
 		int id = 0;
 		CHANNEL.registerMessage(id++, UpdateRangePacket.class, UpdateRangePacket::encode, UpdateRangePacket::new, UpdateRangePacket::handle);
 		CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
+		CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
 
 		// Register ourselves for server and other game events we are interested in
 		MinecraftForge.EVENT_BUS.register(this);

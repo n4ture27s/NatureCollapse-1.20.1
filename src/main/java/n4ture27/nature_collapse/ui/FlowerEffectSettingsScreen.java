@@ -1,149 +1,206 @@
 package n4ture27.nature_collapse.ui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-public class FlowerEffectSettingsScreen extends NatureBaseScreen {
-    private final ItemStack stack;
-    private final int slotId;
+public class FlowerEffectSettingsScreen extends Screen {
+
+    private final ItemStack flowerStack;
+    private final int slotIndex;
     private final boolean isCurio;
-    private final String curiosIdentifier;
-    private final Map<String, Integer> selectedEffects = new HashMap<>();
-    private EffectList list;
+    private final String curioIdentifier;
 
-    public FlowerEffectSettingsScreen(ItemStack stack, int slotId, boolean isCurio, String curiosIdentifier) {
-        super(Component.literal("Flower Effect Settings").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-        this.stack = stack;
-        this.slotId = slotId;
+    private EditBox searchBox;
+    private List<MobEffect> allEffects;
+    private List<MobEffect> filteredEffects;
+    private List<MobEffect> selectedEffects;
+
+    private static final int EFFECTS_PER_PAGE = 8;
+    private int currentPage = 0;
+
+    public FlowerEffectSettingsScreen(ItemStack flowerStack, int slotIndex, boolean isCurio, String curioIdentifier) {
+        super(Component.translatable("gui.nature_collapse.flower_settings"));
+        this.flowerStack = flowerStack;
+        this.slotIndex = slotIndex;
         this.isCurio = isCurio;
-        this.curiosIdentifier = curiosIdentifier;
-        this.loadSettings();
-    }
-
-    private void loadSettings() {
-        if (stack.hasTag() && stack.getTag().contains("SelectedEffects")) {
-            ListTag nbtList = stack.getTag().getList("SelectedEffects", Tag.TAG_COMPOUND);
-            for (int i = 0; i < nbtList.size(); i++) {
-                CompoundTag tag = nbtList.getCompound(i);
-                selectedEffects.put(tag.getString("Id"), tag.getInt("Level"));
-            }
-        }
+        this.curioIdentifier = curioIdentifier;
+        this.selectedEffects = new ArrayList<>();
+        loadSelectedEffects();
     }
 
     @Override
     protected void init() {
         super.init();
-        this.list = new EffectList();
-        this.addWidget(this.list);
+        this.allEffects = ForgeRegistries.MOB_EFFECTS.getValues().stream()
+                .filter(Objects::nonNull)
+                .sorted((e1, e2) -> e1.getDisplayName().getString().compareTo(e2.getDisplayName().getString()))
+                .collect(Collectors.toList());
+        
+        this.searchBox = new EditBox(this.font, this.width / 2 - 100, 20, 200, 20, Component.translatable("gui.nature_collapse.search_effect"));
+        this.searchBox.setMaxLength(50);
+        this.searchBox.setResponder(this::onSearchBoxChanged);
+        this.addRenderableWidget(this.searchBox);
 
-        this.addRenderableWidget(Button.builder(Component.literal("Done"), (btn) -> this.onClose())
-                .bounds(this.width / 2 - 100, this.height - 30, 200, 20).build());
+        this.applyFilter();
+        this.addButtons();
+    }
+
+    private void addButtons() {
+        this.clearWidgets(); // Clear existing buttons before re-adding
+        this.addRenderableWidget(this.searchBox); // Re-add search box
+
+        int startX = this.width / 2 - 100;
+        int startY = 50;
+        int buttonHeight = 20;
+        int buttonSpacing = 2;
+
+        int startIndex = currentPage * EFFECTS_PER_PAGE;
+        int endIndex = Math.min(startIndex + EFFECTS_PER_PAGE, filteredEffects.size());
+
+        for (int i = startIndex; i < endIndex; i++) {
+            MobEffect effect = filteredEffects.get(i);
+            boolean isSelected = selectedEffects.contains(effect);
+            Component buttonText = effect.getDisplayName().copy().append(isSelected ? " (§a選択中§r)" : "");
+            
+            this.addRenderableWidget(Button.builder(buttonText, (button) -> {
+                toggleEffect(effect);
+                this.applyFilter(); // Reapply filter to update button text
+                this.addButtons(); // Re-add buttons to update state
+            }).bounds(startX, startY + (i - startIndex) * (buttonHeight + buttonSpacing), 200, buttonHeight).build());
+        }
+
+        // Pagination buttons
+        int totalPages = (int) Math.ceil((double) filteredEffects.size() / EFFECTS_PER_PAGE);
+        if (totalPages > 1) {
+            this.addRenderableWidget(Button.builder(Component.literal("<"), (button) -> {
+                currentPage = Math.max(0, currentPage - 1);
+                this.addButtons();
+            }).bounds(startX - 30, startY + EFFECTS_PER_PAGE * (buttonHeight + buttonSpacing), 20, buttonHeight).build());
+
+            this.addRenderableWidget(Button.builder(Component.literal(">"), (button) -> {
+                currentPage = Math.min(totalPages - 1, currentPage + 1);
+                this.addButtons();
+            }).bounds(startX + 210, startY + EFFECTS_PER_PAGE * (buttonHeight + buttonSpacing), 20, buttonHeight).build());
+        }
+
+        // Done button
+        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, (button) -> {
+            saveSelectedEffects();
+            Minecraft.getInstance().setScreen(null);
+        }).bounds(this.width / 2 - 100, this.height - 30, 200, 20).build());
+    }
+
+    private void onSearchBoxChanged(String text) {
+        this.currentPage = 0; // Reset page on search
+        this.applyFilter();
+        this.addButtons();
+    }
+
+    private void applyFilter() {
+        String searchText = searchBox.getValue().toLowerCase();
+        if (searchText.isEmpty()) {
+            filteredEffects = new ArrayList<>(allEffects);
+        } else {
+            filteredEffects = allEffects.stream()
+                    .filter(effect -> ForgeRegistries.MOB_EFFECTS.getKey(effect).toString().toLowerCase().contains(searchText) ||
+                                     effect.getDisplayName().getString().toLowerCase().contains(searchText))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private void toggleEffect(MobEffect effect) {
+        if (selectedEffects.contains(effect)) {
+            selectedEffects.remove(effect);
+        } else {
+            selectedEffects.add(effect);
+        }
+    }
+
+    private void loadSelectedEffects() {
+        if (flowerStack.hasTag() && flowerStack.getTag().contains("SelectedEffects")) {
+            ListTag list = flowerStack.getTag().getList("SelectedEffects", Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag effectData = list.getCompound(i);
+                MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(ResourceLocation.tryParse(effectData.getString("Id")));
+                if (effect != null) {
+                    selectedEffects.add(effect);
+                }
+            }
+        }
+    }
+
+    private void saveSelectedEffects() {
+        CompoundTag tag = flowerStack.getOrCreateTag();
+        ListTag list = new ListTag();
+        for (MobEffect effect : selectedEffects) {
+            CompoundTag effectData = new CompoundTag();
+            effectData.putString("Id", Objects.requireNonNull(ForgeRegistries.MOB_EFFECTS.getKey(effect)).toString());
+            // Amplifier and Duration are not configurable in this GUI, so use defaults or existing values
+            // For simplicity, we'll just save the ID. If you need to save level/duration, you'd need more complex UI.
+            effectData.putInt("Level", 1); // Default level
+            effectData.putInt("Duration", 200); // Default duration (10 seconds)
+            list.add(effectData);
+        }
+        tag.put("SelectedEffects", list);
+        flowerStack.setTag(tag);
+
+        // Send packet to server to update the item's NBT
+        NatureCollapse.CHANNEL.sendToServer(new UpdateFlowerEffectsPacket(slotIndex, isCurio, curioIdentifier, flowerStack));
     }
 
     @Override
-    protected void renderContents(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
-        //head&foot
-        this.drawNaturePanel(gui, this.width / 2, 16, 280, 25);
-        this.drawNaturePanel(gui, this.width / 2, this.height - 20, 210, 25);
+    public void render(GuiGraphics guiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
+        this.renderBackground(guiGraphics);
+        super.render(guiGraphics, pMouseX, pMouseY, pPartialTick);
+        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFF);
 
-        this.list.render(gui, mouseX, mouseY, partialTick);
-        this.drawTitle(gui, 12);
+        // Draw current page info
+        int totalPages = (int) Math.ceil((double) filteredEffects.size() / EFFECTS_PER_PAGE);
+        if (totalPages > 1) {
+            guiGraphics.drawCenteredString(this.font, Component.literal((currentPage + 1) + "/" + totalPages), this.width / 2, this.height - 50, 0xFFFFFF);
+        }
     }
 
     @Override
-    public void onClose() {
-        this.saveSettings();
-        super.onClose();
+    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
+        if (this.searchBox.keyPressed(pKeyCode, pScanCode, pModifiers)) {
+            return true;
+        }
+        return super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
 
-    private void saveSettings() {
-        NatureCollapse.CHANNEL.sendToServer(new UpdateFlowerEffectsPacket(selectedEffects, slotId, isCurio, curiosIdentifier));
+    @Override
+    public boolean charTyped(char pCodePoint, int pModifiers) {
+        if (this.searchBox.charTyped(pCodePoint, pModifiers)) {
+            return true;
+        }
+        return super.charTyped(pCodePoint, pModifiers);
     }
 
-    class EffectList extends ObjectSelectionList<EffectList.Entry> {
-        public EffectList() {
-            super(FlowerEffectSettingsScreen.this.minecraft, FlowerEffectSettingsScreen.this.width,
-                    FlowerEffectSettingsScreen.this.height, 32, FlowerEffectSettingsScreen.this.height - 40, 20);
-            ForgeRegistries.MOB_EFFECTS.getEntries().forEach(entry -> {
-                this.addEntry(new Entry(entry.getKey().location(), entry.getValue()));
-            });
-        }
-
-        @Override
-        public int getRowWidth() {
-            return 260;
-        }
-
-        class Entry extends ObjectSelectionList.Entry<Entry> {
-            private final ResourceLocation id;
-            private final MobEffect effect;
-
-            public Entry(ResourceLocation id, MobEffect effect) {
-                this.id = id;
-                this.effect = effect;
-            }
-
-            @Override
-            public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX,
-                    int mouseY, boolean isMouseOver, float partialTick) {
-                String name = effect.getDisplayName().getString();
-                String key = id.toString();
-                boolean selected = selectedEffects.containsKey(key);
-                int color = selected ? 0x00FF00 : 0xFFFFFF;
-                String text = name + " (" + id + ")";
-                if (selected) {
-                    text += " [Lv." + selectedEffects.get(key) + "]";
-                }
-                guiGraphics.drawString(FlowerEffectSettingsScreen.this.font, text, left + 5, top + 5, color);
-            }
-
-            @Override
-            public boolean mouseClicked(double mouseX, double mouseY, int button) {
-                String key = id.toString();
-                if (button == 0) {
-                    if (Screen.hasShiftDown()) {
-                        selectedEffects.put(key, 255);
-                    } else {
-                        int current = selectedEffects.getOrDefault(key, 0);
-                        if (current >= 255)
-                            selectedEffects.remove(key);
-                        else
-                            selectedEffects.put(key, current + 1);
-                    }
-                } else if (button == 1) {
-                    if (Screen.hasShiftDown()) {
-                        selectedEffects.remove(key);
-                    } else {
-                        int current = selectedEffects.getOrDefault(key, 0);
-                        if (current <= 1)
-                            selectedEffects.remove(key);
-                        else
-                            selectedEffects.put(key, current - 1);
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public Component getNarration() {
-                return Component.literal(effect.getDisplayName().getString());
-            }
-        }
+    @Override
+    public boolean isPauseScreen() {
+        return false;
     }
 }

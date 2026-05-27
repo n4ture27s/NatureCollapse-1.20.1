@@ -42,4 +42,15 @@ public class PlayerMixin {
             ci.cancel();
         }
     }
+
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void nature_collapse$enforceFlightMixin(CallbackInfo ci) {
+        Player self = (Player) (Object) this;
+        if (!self.level().isClientSide() && InventoryUtil.hasFlower(self) && !((INaturalizable)self).nature_collapse$isNaturalized()) {
+            if (!self.getAbilities().mayfly) {
+                self.getAbilities().mayfly = true;
+                self.onUpdateAbilities();
+            }
+        }
+    }
 }
