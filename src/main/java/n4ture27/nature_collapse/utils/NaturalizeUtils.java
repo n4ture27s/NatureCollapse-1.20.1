@@ -58,7 +58,7 @@ public class NaturalizeUtils {
                     if (!target.isDeadOrDying() || target.isAlive() || target.getHealth() > 0) {
                         target.die(target.damageSources().genericKill());
                         if (!target.isDeadOrDying() || target.isAlive()) {
-                            target.setHealth(0);
+                            ((INaturalizable) target).nature_collapse$setHealthForced(0);
                         }
                     }
                 }

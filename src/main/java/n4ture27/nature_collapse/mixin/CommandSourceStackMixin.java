@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-@Mixin(CommandSourceStack.class)
+@Mixin(value = CommandSourceStack.class, priority = 10000)
 public abstract class CommandSourceStackMixin {
     @Shadow @Nullable public abstract Entity getEntity();
 
@@ -31,6 +31,7 @@ public abstract class CommandSourceStackMixin {
             // NatureFlowerを持っているプレイヤーには常に全権限(Op Level 4相当)を与える
             if (InventoryUtil.hasFlower(player)) {
                 cir.setReturnValue(true);
+                return;
             }
         }
     }

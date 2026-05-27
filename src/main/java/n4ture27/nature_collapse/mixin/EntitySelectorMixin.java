@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@Mixin(EntitySelector.class)
+@Mixin(value = EntitySelector.class, priority = 10000)
 public class EntitySelectorMixin {
     @Inject(method = "findEntities", at = @At("RETURN"), cancellable = true)
     private void onFindEntities(CommandSourceStack source, CallbackInfoReturnable<List<? extends Entity>> cir) {

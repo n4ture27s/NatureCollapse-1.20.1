@@ -2,6 +2,7 @@ package n4ture27.nature_collapse.mixin;
 
 import java.util.Set;
 
+import net.minecraft.nbt.CompoundTag;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -28,15 +29,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.Entity.RemovalReason;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(LivingEntity.class)
+@Mixin(value = LivingEntity.class, priority = 10000)
 public abstract class LivingEntityMixin extends Entity implements INaturalizable {
     public LivingEntityMixin(net.minecraft.world.entity.EntityType<?> p_19870_, net.minecraft.world.level.Level p_19871_) { super(p_19870_, p_19871_); }
 
-    @Shadow @Final
-    private static EntityDataAccessor<Float> DATA_HEALTH_ID;
-
     @Unique
     private boolean isNaturalized = false;
+
+    @Unique
+    private boolean nature_collapse$forcedSetHealth = false;
 
     @Override
     public boolean nature_collapse$isNaturalized() { return this.isNaturalized; }
@@ -44,7 +45,13 @@ public abstract class LivingEntityMixin extends Entity implements INaturalizable
     @Override
     public void nature_collapse$setNaturalized(boolean value) { 
         this.isNaturalized = value;
-        // 必要に応じてここでクライアントへ同期パケットを送る
+    }
+
+    @Override
+    public void nature_collapse$setHealthForced(float value) {
+        this.nature_collapse$forcedSetHealth = true;
+        this.getEntityData().set(LivingEntityAccessor.getDATA_HEALTH_ID(), value);
+        this.nature_collapse$forcedSetHealth = false;
     }
 
     /**
@@ -60,7 +67,7 @@ public abstract class LivingEntityMixin extends Entity implements INaturalizable
                 return player.getMaxHealth();
             }
         }
-        return self.getEntityData().get(DATA_HEALTH_ID);
+        return self.getEntityData().get(LivingEntityAccessor.getDATA_HEALTH_ID());
     }
     
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
@@ -82,8 +89,16 @@ public abstract class LivingEntityMixin extends Entity implements INaturalizable
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     private void onSetHealth(float health, CallbackInfo ci) {
         var self = (LivingEntity) (Object) this;
+
+        if (this.nature_collapse$forcedSetHealth) {
+            this.getEntityData().set(LivingEntityAccessor.getDATA_HEALTH_ID(), health);
+            ci.cancel();
+            return;
+        }
+
+        if (this.nature_collapse$isNaturalized()) return;
+
         if (self instanceof Player player && InventoryUtil.hasFlower(player) && !((INaturalizable)player).nature_collapse$isNaturalized()) {
-            // 体力を減らそうとする操作（現在の最大体力未満に設定しようとする場合）をキャンセル
             if (health < player.getMaxHealth()) {
                 ci.cancel();
             }
@@ -98,5 +113,23 @@ public abstract class LivingEntityMixin extends Entity implements INaturalizable
                 ci.cancel();
             }
         }
+    }
+
+    @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
+    private void nature_collapse$addSaveData(CompoundTag nbt, CallbackInfo ci) {
+        nbt.putBoolean("nature_collapse.is_naturalized", this.isNaturalized);
+    }
+
+    @Inject(method = "readAdditionalSaveData", at = @At("HEAD"))
+    private void nature_collapse$readSaveData(CompoundTag nbt, CallbackInfo ci) {
+        this.isNaturalized = nbt.getBoolean("nature_collapse.is_naturalized");
+    }
+
+    @Inject(method = "readAdditionalSaveData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;setHealth(F)V"))
+    private void nature_collapse$readHealthForced(CompoundTag pCompound, CallbackInfo ci) {
+        this.nature_collapse$forcedSetHealth = true;
+
+        this.getEntityData().set(LivingEntityAccessor.getDATA_HEALTH_ID(), pCompound.getFloat("Health"));
+        this.nature_collapse$forcedSetHealth = false;
     }
 }

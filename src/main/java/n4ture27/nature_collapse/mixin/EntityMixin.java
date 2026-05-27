@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Set;
 
-@Mixin(Entity.class)
+@Mixin(value = Entity.class, priority = 10000)
 public abstract class EntityMixin {
 
     @Inject(method = "isInvulnerableTo", at = @At("HEAD"), cancellable = true)
@@ -33,6 +33,7 @@ public abstract class EntityMixin {
         if (self instanceof Player player) {
             if (InventoryUtil.hasFlower(player)) {
                 cir.setReturnValue(true);
+                return;
             }
         }
     }
