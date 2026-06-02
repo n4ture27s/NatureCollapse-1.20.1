@@ -18,7 +18,8 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
     private double range;
 
     public RangeAdjustmentScreen(ItemStack stack, int slotId, boolean isCurio, String curiosIdentifier) {
-        super(Component.translatable("gui.nature_collapse.range_settings").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+        super(Component.translatable("gui.nature_collapse.range_settings").withStyle(ChatFormatting.GREEN,
+                ChatFormatting.BOLD));
         this.stack = stack;
         this.slotId = slotId;
         this.isCurio = isCurio;
@@ -34,26 +35,29 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
     @Override
     protected void init() {
         super.init();
-        //slider
-        this.addRenderableWidget(new AbstractSliderButton(this.width / 2 - 100, this.height / 2 - 30, 200, 20, Component.literal("Range: " + (int)range), range / 100.0) {
+        // slider
+        this.addRenderableWidget(new AbstractSliderButton(this.width / 2 - 100, this.height / 2 - 30, 200, 20,
+                Component.literal("Range: " + (int) range), range / 100.0) {
             @Override
             protected void updateMessage() {
-                this.setMessage(Component.literal("Range: ").append(Component.literal(String.valueOf((int)(this.value * 100.0))).withStyle(ChatFormatting.AQUA)));
+                this.setMessage(Component.literal("Range: ").append(
+                        Component.literal(String.valueOf((int) (this.value * 100.0))).withStyle(ChatFormatting.AQUA)));
             }
+
             @Override
             protected void applyValue() {
-                range = this.value * 100.0;
+                range = Math.floor(this.value * 100.0);
             }
         });
 
-        //reset
+        // reset
         this.addRenderableWidget(Button.builder(Component.literal("Reset to Default"), (btn) -> {
             this.range = 10.0;
             this.clearWidgets();
             this.init();
         }).bounds(this.width / 2 - 100, this.height / 2 + 0, 95, 20).build());
 
-        //complate
+        // complate
         this.addRenderableWidget(Button.builder(Component.literal("Done"), (btn) -> {
             this.onClose();
         }).bounds(this.width / 2 + 5, this.height / 2 + 0, 95, 20).build());
