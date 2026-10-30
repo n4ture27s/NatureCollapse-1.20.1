@@ -13,25 +13,23 @@ import net.minecraft.world.item.ItemStack;
 
 public class FlowerDetailScreen extends NatureBaseScreen {
     public enum FeatureType {
-        FLIGHT("gui.nature_collapse.feature.flight", "🪶"),
-        INVULNERABILITY("gui.nature_collapse.feature.invul", "🛡️"),
-        SATURATION("gui.nature_collapse.feature.saturation", "🍖"),
-        MAGNET("gui.nature_collapse.feature.magnet", "🧲"),
-        SPEED("gui.nature_collapse.feature.speed", "⚡"),
-        AURA("gui.nature_collapse.feature.aura", "🌀"),
-        VISION("gui.nature_collapse.feature.vision", "👁️");
+        FLIGHT("gui.nature_collapse.feature.flight"),
+        INVULNERABILITY("gui.nature_collapse.feature.invul"),
+        SATURATION("gui.nature_collapse.feature.saturation"),
+        MAGNET("gui.nature_collapse.feature.magnet"),
+        SPEED("gui.nature_collapse.feature.speed"),
+        AURA("gui.nature_collapse.feature.aura"),
+        VISION("gui.nature_collapse.feature.vision");
 
         public final String titleKey;
-        public final String icon;
 
-        FeatureType(String titleKey, String icon) {
+        FeatureType(String titleKey) {
             this.titleKey = titleKey;
-            this.icon = icon;
         }
     }
 
     private static final int PANEL_W = 320;
-    private static final int PANEL_H = 200;
+    private static final int PANEL_H = 190;
 
     private final ItemStack flowerStack;
     private final int slotIndex;
@@ -73,7 +71,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
 
                 // 垂直飛行速度スライダー (0.02 〜 0.20)
                 this.addRenderableWidget(new NatureSlider(
-                        centerX - 130, panelTop + 90, 260, 20,
+                        centerX - 130, panelTop + 88, 260, 20,
                         "Vertical Speed: ", "",
                         0.02, 0.20, config.flightSpeedV(), 0.01,
                         val -> config = new InventoryUtil.FlowerConfig(
@@ -87,7 +85,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             case MAGNET -> {
                 // 吸引範囲スライダー (2m 〜 32m)
                 this.addRenderableWidget(new NatureSlider(
-                        centerX - 130, panelTop + 75, 260, 20,
+                        centerX - 130, panelTop + 72, 260, 20,
                         "Attraction Radius: ", " blocks",
                         2.0, 32.0, config.magnetRange(), 1.0,
                         val -> config = new InventoryUtil.FlowerConfig(
@@ -101,7 +99,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             case SPEED -> {
                 // 移動速度倍率スライダー (1.0x 〜 4.0x)
                 this.addRenderableWidget(new NatureSlider(
-                        centerX - 130, panelTop + 75, 260, 20,
+                        centerX - 130, panelTop + 72, 260, 20,
                         "Ground Speed Boost: ", "x",
                         1.0, 4.0, config.speedMult(), 0.1,
                         val -> config = new InventoryUtil.FlowerConfig(
@@ -115,7 +113,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             case AURA -> {
                 // オーラ範囲スライダー (2m 〜 16m)
                 this.addRenderableWidget(new NatureSlider(
-                        centerX - 130, panelTop + 75, 260, 20,
+                        centerX - 130, panelTop + 72, 260, 20,
                         "Naturalize Field Radius: ", " blocks",
                         2.0, 16.0, config.auraRange(), 1.0,
                         val -> config = new InventoryUtil.FlowerConfig(
@@ -127,17 +125,16 @@ public class FlowerDetailScreen extends NatureBaseScreen {
                 ));
             }
             case INVULNERABILITY -> {
-                // 無敵状態トグルボタン
                 this.addRenderableWidget(new NatureButton(
-                        centerX - 100, panelTop + 75, 200, 22,
+                        centerX - 100, panelTop + 72, 200, 22,
                         Component.literal("Invulnerability: " + (config.invulEnabled() ? "ENABLED" : "DISABLED")),
                         btn -> {
                             boolean next = !config.invulEnabled();
                             config = new InventoryUtil.FlowerConfig(
-                                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                                    config.effectsEnabled(), next, config.saturationEnabled(),
-                                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                                     config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                                     config.effectsEnabled(), next, config.saturationEnabled(),
+                                     config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                                     config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
                             );
                             btn.setMessage(Component.literal("Invulnerability: " + (next ? "ENABLED" : "DISABLED")));
                         },
@@ -146,15 +143,15 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             }
             case SATURATION -> {
                 this.addRenderableWidget(new NatureButton(
-                        centerX - 100, panelTop + 75, 200, 22,
+                        centerX - 100, panelTop + 72, 200, 22,
                         Component.literal("Saturation Keep: " + (config.saturationEnabled() ? "ENABLED" : "DISABLED")),
                         btn -> {
                             boolean next = !config.saturationEnabled();
                             config = new InventoryUtil.FlowerConfig(
-                                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                                    config.effectsEnabled(), config.invulEnabled(), next,
-                                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                                     config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                                     config.effectsEnabled(), config.invulEnabled(), next,
+                                     config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                                     config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
                             );
                             btn.setMessage(Component.literal("Saturation Keep: " + (next ? "ENABLED" : "DISABLED")));
                         },
@@ -163,15 +160,15 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             }
             case VISION -> {
                 this.addRenderableWidget(new NatureButton(
-                        centerX - 100, panelTop + 75, 200, 22,
+                        centerX - 100, panelTop + 72, 200, 22,
                         Component.literal("Clear Vision: " + (config.visionEnabled() ? "ENABLED" : "DISABLED")),
                         btn -> {
                             boolean next = !config.visionEnabled();
                             config = new InventoryUtil.FlowerConfig(
-                                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                                    config.speedMult(), config.auraEnabled(), config.auraRange(), next
+                                     config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                                     config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                                     config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                                     config.speedMult(), config.auraEnabled(), config.auraRange(), next
                             );
                             btn.setMessage(Component.literal("Clear Vision: " + (next ? "ENABLED" : "DISABLED")));
                         },
@@ -180,11 +177,11 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             }
         }
 
-        // 下部アクションバー: 「← Return to Hub」
-        int actionY = panelTop + PANEL_H - 34;
+        // 下部アクションボタン: "< Back to Hub"
+        int actionY = panelTop + PANEL_H - 32;
         this.addRenderableWidget(new NatureButton(
-                centerX - 80, actionY, 160, 22,
-                Component.literal("← Return to Hub"),
+                centerX - 70, actionY, 140, 22,
+                Component.literal("< Back to Hub"),
                 btn -> this.returnToHub(),
                 true
         ));
@@ -215,8 +212,8 @@ public class FlowerDetailScreen extends NatureBaseScreen {
         this.renderGlassPanel(gui, panelLeft, panelTop, PANEL_W, PANEL_H);
 
         // タイトル
-        String headerTitle = featureType.icon + " " + this.title.getString();
-        gui.drawCenteredString(this.font, headerTitle, centerX, panelTop + 20, 0x55FFAA);
+        String headerTitle = this.title.getString();
+        gui.drawCenteredString(this.font, headerTitle, centerX, panelTop + 18, 0x55FFAA);
 
         // 説明文
         String descText = switch (featureType) {
@@ -228,6 +225,6 @@ public class FlowerDetailScreen extends NatureBaseScreen {
             case SATURATION -> "Keeps your hunger and saturation at maximum levels.";
             case VISION -> "Grants permanent clear vision underwater and in absolute darkness.";
         };
-        gui.drawCenteredString(this.font, descText, centerX, panelTop + 38, 0x88CCAA);
+        gui.drawCenteredString(this.font, descText, centerX, panelTop + 36, 0x88CCAA);
     }
 }

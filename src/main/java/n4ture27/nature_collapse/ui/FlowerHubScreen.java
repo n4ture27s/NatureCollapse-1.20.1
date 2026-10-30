@@ -8,36 +8,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
 public class FlowerHubScreen extends NatureBaseScreen {
 
-    public record PetalInfo(
-            String id,
-            String name,
-            String icon,
-            double angleDeg,
-            FlowerDetailScreen.FeatureType detailType
-    ) {
-    }
-
-    private static final PetalInfo[] PETALS = new PetalInfo[]{
-            new PetalInfo("flight", "Flight", "🪶", 270, FlowerDetailScreen.FeatureType.FLIGHT),        // 上 (12時)
-            new PetalInfo("effects", "Effects", "🧪", 315, null),                                         // 右上 (1時半) -> FlowerEffectSettingsScreen
-            new PetalInfo("invul", "Invulnerable", "🛡️", 0, FlowerDetailScreen.FeatureType.INVULNERABILITY), // 右 (3時)
-            new PetalInfo("saturation", "Saturation", "🍖", 45, FlowerDetailScreen.FeatureType.SATURATION), // 右下 (4時半)
-            new PetalInfo("magnet", "Magnet", "🧲", 90, FlowerDetailScreen.FeatureType.MAGNET),          // 下 (6時)
-            new PetalInfo("speed", "Speed", "⚡", 135, FlowerDetailScreen.FeatureType.SPEED),             // 左下 (7時半)
-            new PetalInfo("aura", "Aura", "🌀", 180, FlowerDetailScreen.FeatureType.AURA),               // 左 (9時)
-            new PetalInfo("vision", "Vision", "👁️", 225, FlowerDetailScreen.FeatureType.VISION)          // 左上 (10時半)
-    };
-
-    private static final int ORBIT_RADIUS = 100;
-    private static final int PETAL_WIDTH = 76;
-    private static final int PETAL_HEIGHT = 40;
-    private static final int CORE_RADIUS = 36;
+    private static final int PANEL_W = 340;
+    private static final int PANEL_H = 224;
 
     private final ItemStack flowerStack;
     private final int slotIndex;
@@ -60,11 +36,183 @@ public class FlowerHubScreen extends NatureBaseScreen {
     protected void init() {
         super.init();
 
-        // 閉じるボタン
+        int centerX = this.width / 2;
+        int panelLeft = centerX - PANEL_W / 2;
+        int panelTop = this.height / 2 - PANEL_H / 2;
+
+        int col1X = panelLeft + 16;
+        int col2X = centerX + 6;
+        int colW = 148;
+        int rowH = 24;
+        int rowGap = 6;
+        int startY = panelTop + 52;
+
+        // ==========================================
+        // 列 1
+        // ==========================================
+
+        // 1. Flight (トグル + 詳細)
+        int y0 = startY;
         this.addRenderableWidget(new NatureButton(
-                this.width / 2 - 50,
-                this.height - 28,
-                100,
+                col1X, y0, colW - 30, rowH,
+                getToggleText("Flight", config.flightEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            !config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Flight", config.flightEnabled()));
+                },
+                config.flightEnabled()
+        ));
+        this.addRenderableWidget(new NatureButton(
+                col1X + colW - 26, y0, 26, rowH,
+                Component.literal(">"),
+                btn -> openDetail(FlowerDetailScreen.FeatureType.FLIGHT)
+        ));
+
+        // 2. Invulnerability (トグルのみ)
+        int y1 = startY + (rowH + rowGap);
+        this.addRenderableWidget(new NatureButton(
+                col1X, y1, colW, rowH,
+                getToggleText("Invulnerable", config.invulEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), !config.invulEnabled(), config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Invulnerable", config.invulEnabled()));
+                },
+                config.invulEnabled()
+        ));
+
+        // 3. Saturation (トグルのみ)
+        int y2 = startY + (rowH + rowGap) * 2;
+        this.addRenderableWidget(new NatureButton(
+                col1X, y2, colW, rowH,
+                getToggleText("Saturation", config.saturationEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), !config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Saturation", config.saturationEnabled()));
+                },
+                config.saturationEnabled()
+        ));
+
+        // 4. Vision (トグルのみ)
+        int y3 = startY + (rowH + rowGap) * 3;
+        this.addRenderableWidget(new NatureButton(
+                col1X, y3, colW, rowH,
+                getToggleText("Clear Vision", config.visionEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), !config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Clear Vision", config.visionEnabled()));
+                },
+                config.visionEnabled()
+        ));
+
+        // ==========================================
+        // 列 2
+        // ==========================================
+
+        // 5. Magnet (トグル + 詳細)
+        this.addRenderableWidget(new NatureButton(
+                col2X, y0, colW - 30, rowH,
+                getToggleText("Item Magnet", config.magnetEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                            !config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Item Magnet", config.magnetEnabled()));
+                },
+                config.magnetEnabled()
+        ));
+        this.addRenderableWidget(new NatureButton(
+                col2X + colW - 26, y0, 26, rowH,
+                Component.literal(">"),
+                btn -> openDetail(FlowerDetailScreen.FeatureType.MAGNET)
+        ));
+
+        // 6. Speed (トグル + 詳細)
+        this.addRenderableWidget(new NatureButton(
+                col2X, y1, colW - 30, rowH,
+                getToggleText("Speed Boost", config.speedEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), !config.speedEnabled(),
+                            config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Speed Boost", config.speedEnabled()));
+                },
+                config.speedEnabled()
+        ));
+        this.addRenderableWidget(new NatureButton(
+                col2X + colW - 26, y1, 26, rowH,
+                Component.literal(">"),
+                btn -> openDetail(FlowerDetailScreen.FeatureType.SPEED)
+        ));
+
+        // 7. Aura (トグル + 詳細)
+        this.addRenderableWidget(new NatureButton(
+                col2X, y2, colW - 30, rowH,
+                getToggleText("Field Aura", config.auraEnabled()),
+                btn -> {
+                    config = new InventoryUtil.FlowerConfig(
+                            config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
+                            config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
+                            config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
+                            config.speedMult(), !config.auraEnabled(), config.auraRange(), config.visionEnabled()
+                    );
+                    saveConfig();
+                    btn.setMessage(getToggleText("Field Aura", config.auraEnabled()));
+                },
+                config.auraEnabled()
+        ));
+        this.addRenderableWidget(new NatureButton(
+                col2X + colW - 26, y2, 26, rowH,
+                Component.literal(">"),
+                btn -> openDetail(FlowerDetailScreen.FeatureType.AURA)
+        ));
+
+        // 8. Potion Effects (設定画面へ)
+        this.addRenderableWidget(new NatureButton(
+                col2X, y3, colW, rowH,
+                Component.literal("Effects  [Configure >]"),
+                btn -> openEffectsScreen(),
+                config.effectsEnabled()
+        ));
+
+        // ==========================================
+        // フッター
+        // ==========================================
+        this.addRenderableWidget(new NatureButton(
+                centerX - 60,
+                panelTop + PANEL_H - 30,
+                120,
                 20,
                 Component.literal("Close"),
                 btn -> this.onClose(),
@@ -72,87 +220,22 @@ public class FlowerHubScreen extends NatureBaseScreen {
         ));
     }
 
-    private boolean isFeatureEnabled(String id) {
-        return switch (id) {
-            case "flight" -> config.flightEnabled();
-            case "effects" -> config.effectsEnabled();
-            case "invul" -> config.invulEnabled();
-            case "saturation" -> config.saturationEnabled();
-            case "magnet" -> config.magnetEnabled();
-            case "speed" -> config.speedEnabled();
-            case "aura" -> config.auraEnabled();
-            case "vision" -> config.visionEnabled();
-            default -> false;
-        };
-    }
-
-    private void toggleFeature(String id) {
-        config = switch (id) {
-            case "flight" -> new InventoryUtil.FlowerConfig(
-                    !config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "effects" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    !config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "invul" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), !config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "saturation" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), !config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "magnet" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    !config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "speed" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), !config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "aura" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), !config.auraEnabled(), config.auraRange(), config.visionEnabled()
-            );
-            case "vision" -> new InventoryUtil.FlowerConfig(
-                    config.flightEnabled(), config.flightSpeedH(), config.flightSpeedV(),
-                    config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
-                    config.magnetEnabled(), config.magnetRange(), config.speedEnabled(),
-                    config.speedMult(), config.auraEnabled(), config.auraRange(), !config.visionEnabled()
-            );
-            default -> config;
-        };
-
-        saveConfig();
-
-        Minecraft.getInstance().getSoundManager().play(
-                net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.2f)
-        );
-    }
-
-    private void openDetail(PetalInfo petal) {
-        saveConfig();
-        if (petal.id().equals("effects")) {
-            Minecraft.getInstance().setScreen(new FlowerEffectSettingsScreen(flowerStack, slotIndex, isCurio, curioIdentifier));
-        } else if (petal.detailType() != null) {
-            Minecraft.getInstance().setScreen(new FlowerDetailScreen(flowerStack, slotIndex, isCurio, curioIdentifier, petal.detailType()));
+    private Component getToggleText(String name, boolean enabled) {
+        if (enabled) {
+            return Component.literal(name + "  ").append(Component.literal("[ON]").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+        } else {
+            return Component.literal(name + "  ").append(Component.literal("[OFF]").withStyle(ChatFormatting.GRAY));
         }
+    }
+
+    private void openDetail(FlowerDetailScreen.FeatureType type) {
+        saveConfig();
+        Minecraft.getInstance().setScreen(new FlowerDetailScreen(flowerStack, slotIndex, isCurio, curioIdentifier, type));
+    }
+
+    private void openEffectsScreen() {
+        saveConfig();
+        Minecraft.getInstance().setScreen(new FlowerEffectSettingsScreen(flowerStack, slotIndex, isCurio, curioIdentifier));
     }
 
     private void saveConfig() {
@@ -167,133 +250,23 @@ public class FlowerHubScreen extends NatureBaseScreen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int centerX = this.width / 2;
-        int centerY = this.height / 2 - 10;
-
-        for (PetalInfo petal : PETALS) {
-            double rad = Math.toRadians(petal.angleDeg());
-            int petalCenterX = centerX + (int) (Math.cos(rad) * ORBIT_RADIUS);
-            int petalCenterY = centerY + (int) (Math.sin(rad) * ORBIT_RADIUS);
-
-            int x1 = petalCenterX - PETAL_WIDTH / 2;
-            int y1 = petalCenterY - PETAL_HEIGHT / 2;
-            int x2 = petalCenterX + PETAL_WIDTH / 2;
-            int y2 = petalCenterY + PETAL_HEIGHT / 2;
-
-            if (mouseX >= x1 && mouseX <= x2 && mouseY >= y1 && mouseY <= y2) {
-                if (button == 0) {
-                    // 左クリック: トグル
-                    toggleFeature(petal.id());
-                    return true;
-                } else if (button == 1) {
-                    // 右クリック: 詳細設定へジャンプ
-                    openDetail(petal);
-                    return true;
-                }
-            }
-        }
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
     protected void renderContents(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
         int centerX = this.width / 2;
-        int centerY = this.height / 2 - 10;
+        int panelLeft = centerX - PANEL_W / 2;
+        int panelTop = this.height / 2 - PANEL_H / 2;
 
-        // 背景の装飾光彩円
-        long time = System.currentTimeMillis();
-        float pulse = (float) (0.6f + 0.4f * Math.sin(time / 500.0));
-        int orbitGlow = Mth.hsvToRgb(0.38f, 0.8f, pulse);
-        gui.fill(centerX - ORBIT_RADIUS - 44, centerY - ORBIT_RADIUS - 24,
-                centerX + ORBIT_RADIUS + 44, centerY + ORBIT_RADIUS + 24, 0x1A003318);
+        // クリーンなフロストガラスパネル
+        this.renderGlassPanel(gui, panelLeft, panelTop, PANEL_W, PANEL_H);
 
-        // 8枚の花びらノードを描画
-        for (PetalInfo petal : PETALS) {
-            boolean enabled = isFeatureEnabled(petal.id());
-            double rad = Math.toRadians(petal.angleDeg());
+        // ヘッダー: アイテムアイコン ＋ タイトル
+        int headerY = panelTop + 14;
+        gui.renderItem(this.flowerStack, centerX - 80, headerY - 4);
+        gui.drawString(this.font, Component.literal("Nature Flower - Control Hub").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD),
+                centerX - 58, headerY, 0x55FFAA, true);
 
-            // ホバー判定
-            int basePx = centerX + (int) (Math.cos(rad) * ORBIT_RADIUS);
-            int basePy = centerY + (int) (Math.sin(rad) * ORBIT_RADIUS);
-            boolean hovered = mouseX >= basePx - PETAL_WIDTH / 2 && mouseX <= basePx + PETAL_WIDTH / 2
-                    && mouseY >= basePy - PETAL_HEIGHT / 2 && mouseY <= basePy + PETAL_HEIGHT / 2;
-
-            // ホバー時に外側へ少し広がるアニメーション
-            int currentRadius = hovered ? ORBIT_RADIUS + 6 : ORBIT_RADIUS;
-            int px = centerX + (int) (Math.cos(rad) * currentRadius);
-            int py = centerY + (int) (Math.sin(rad) * currentRadius);
-
-            int x1 = px - PETAL_WIDTH / 2;
-            int y1 = py - PETAL_HEIGHT / 2;
-            int x2 = px + PETAL_WIDTH / 2;
-            int y2 = py + PETAL_HEIGHT / 2;
-
-            // コアから花びらへの接続ステム（茎・エネルギーライン）
-            int stemColor = enabled ? 0x9900EE77 : 0x44005522;
-            gui.fill(centerX, centerY, px, py, stemColor);
-
-            // 花びら枠線と背景
-            int borderColor;
-            int bgColorTop;
-            int bgColorBot;
-
-            if (enabled) {
-                borderColor = hovered ? 0xFFFFFFFF : 0xFF00FF88;
-                bgColorTop = hovered ? 0xDD00552B : 0xCC00381C;
-                bgColorBot = hovered ? 0xEE00381C : 0xDD002211;
-            } else {
-                borderColor = hovered ? 0xFF558866 : 0xFF22442E;
-                bgColorTop = hovered ? 0xCC112217 : 0xBB0B1710;
-                bgColorBot = hovered ? 0xDD0C1A11 : 0xCC07100B;
-            }
-
-            // 外周グロー
-            gui.fill(x1 - 1, y1 - 1, x2 + 1, y2 + 1, borderColor);
-            gui.fillGradient(x1, y1, x2, y2, bgColorTop, bgColorBot);
-
-            // アイコン + 名前
-            String label = petal.icon() + " " + petal.name();
-            int nameColor = enabled ? (hovered ? 0xFFFFFF : 0x88FFBB) : 0x779988;
-            gui.drawCenteredString(this.font, label, px, py - 12, nameColor);
-
-            // ステータスバッジ
-            String badge = enabled ? "[ ON ]" : "[ OFF ]";
-            int badgeColor = enabled ? 0x55FFAA : 0xAA5555;
-            gui.drawCenteredString(this.font, badge, px, py + 2, badgeColor);
-        }
-
-        // 中央コア（Receptacle Core）描画
-        gui.fill(centerX - CORE_RADIUS - 2, centerY - CORE_RADIUS - 2,
-                centerX + CORE_RADIUS + 2, centerY + CORE_RADIUS + 2, (0xFF << 24) | orbitGlow);
-        gui.fillGradient(centerX - CORE_RADIUS, centerY - CORE_RADIUS,
-                centerX + CORE_RADIUS, centerY + CORE_RADIUS, 0xEE041A0D, 0xF8010A05);
-
-        // 3D花アイコン描画
-        gui.renderItem(this.flowerStack, centerX - 8, centerY - 18);
-
-        // コアタイトルとステータス
-        gui.drawCenteredString(this.font, "NATURE", centerX, centerY + 4, 0x55FFAA);
-
-        int activeCount = 0;
-        for (PetalInfo p : PETALS) {
-            if (isFeatureEnabled(p.id())) activeCount++;
-        }
-        gui.drawCenteredString(this.font, activeCount + "/8 ON", centerX, centerY + 16, 0x88DD99);
-
-        // 画面上部バナー
-        gui.drawCenteredString(this.font, Component.literal("NATURE FLOWER HUB").withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN),
-                centerX, 16, 0x00FF88);
-
-        // 画面下部操作ガイド
+        // サブガイドテキスト
         gui.drawCenteredString(this.font,
-                Component.literal("[Left Click] Toggle  •  [Right Click] Settings").withStyle(ChatFormatting.GRAY),
-                centerX, this.height - 46, 0x88CCAA);
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+                Component.literal("Click to toggle | [>] to configure parameters").withStyle(ChatFormatting.DARK_GRAY),
+                centerX, panelTop + 36, 0x88AAAA);
     }
 }

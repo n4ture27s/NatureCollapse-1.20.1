@@ -181,7 +181,7 @@ public class FlowerEffectSettingsScreen extends NatureBaseScreen {
             // カード削除 [X] ボタン
             this.addRenderableWidget(new NatureButton(
                     rightX + colW - 26, cardY, 24, cardH,
-                    Component.literal("✕").withStyle(ChatFormatting.RED),
+                    Component.literal("X").withStyle(ChatFormatting.RED),
                     btn -> removeEffect(fData)
             ));
         }
@@ -288,7 +288,7 @@ public class FlowerEffectSettingsScreen extends NatureBaseScreen {
 
         this.addRenderableWidget(new NatureButton(
                 this.width / 2 - 65, footerY, 130, 22,
-                Component.literal("← Return to Hub"),
+                Component.literal("< Back to Hub"),
                 btn -> this.returnToHub()
         ));
 
