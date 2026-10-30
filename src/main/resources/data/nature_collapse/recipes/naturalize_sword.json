@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " # ",
+    "#X#",
+    " # "
+  ],
+  "key": {
+    "X": {
+      "item": "nature_collapse:miracle_root"
+    },
+    "#": {
+      "item": "minecraft:nether_star"
+    }
+  },
+  "result": {
+    "item": "nature_collapse:naturalize_sword",
+    "count": 1
+  }
+}

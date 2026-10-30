@@ -1,21 +1,66 @@
 {
+	"item_group.nature_collapse": "自然の崩壊",
 
-	"item_group.nature_collapse" : "自然の崩壊",
+	"key.categories.nature_collapse": "自然の崩壊 (Nature Collapse)",
+	"key.nature_collapse.open_range_gui": "アイテム設定GUIを開く",
 
-	"gui.nature_collapse.range_settings" : "レンジ設定",
+	"gui.nature_collapse.range_settings": "射程設定 - 帰化の剣",
+	"gui.nature_collapse.flower_settings": "エフェクト制御マトリクス - 不変の花",
+	"gui.nature_collapse.search_effect": "エフェクトを検索...",
 
-	"gui.nature_collapse.flower_settings" : "エフェクト設定",
-	"gui.nature_collapse.search_effect" : "検索",
-	
+	"gui.nature_collapse.feature.flight": "飛行能力・機動性設定",
+	"gui.nature_collapse.feature.invul": "完全無敵・防護設定",
+	"gui.nature_collapse.feature.saturation": "飽食・満腹度維持設定",
+	"gui.nature_collapse.feature.magnet": "アイテム・経験値磁石設定",
+	"gui.nature_collapse.feature.speed": "地上俊敏・移動速度設定",
+	"gui.nature_collapse.feature.aura": "帰化オーラ・絶対防衛圏設定",
+	"gui.nature_collapse.feature.vision": "クリア視界・全方位暗視設定",
+
 	"effect.nature_collapse.to_natural": "始まりへの帰化",
 
 	"item.nature_collapse.naturalize_sword": "帰化の剣",
-	"item.nature_collapse.naturalize_sword.subtext":"「Omnia ad initium suum redeunt,\nneque umquam rediri possunt.」",
+	"item.nature_collapse.naturalize_sword.subtext": "「Omnia ad initium suum redeunt,\nneque umquam rediri possunt.」",
 	"item.nature_collapse.naturalize_sword.desc": "自然へと帰す。",
 
 	"item.nature_collapse.nature_flower": "不変の花",
-	"item.nature_collapse.nature_flower.subtext":"「Natura ipsa est immutabilis et inconcussa,\nneque quisquam eam mutare conatur.」",
+	"item.nature_collapse.nature_flower.subtext": "「Natura ipsa est immutabilis et inconcussa,\nneque quisquam eam mutare conatur.」",
 	"item.nature_collapse.nature_flower.desc": "自然を保つ。",
-	
+
+	"item.nature_collapse.genesis_root": "創生の種根",
+	"item.nature_collapse.genesis_root.desc1": "「大地が裂け、底知れぬ原初の根が目を覚ます。」",
+	"item.nature_collapse.genesis_root.desc2": "現世の岩盤（最深部）に使用することで召喚する。",
+	"item.nature_collapse.genesis_root.desc3": "※周囲の広範囲ブロックを激しく破壊しながら出現します",
+
+	"item.nature_collapse.clover": "クローバー",
+	"item.nature_collapse.clover.desc1": "作物の間から稀に見つかる幸運の葉。",
+	"item.nature_collapse.clover.desc2": "所持中: 幸運 +1 | 品質 +1 | レア確率 ×1.5",
+	"item.nature_collapse.clover.desc3": "インベントリにある間、戦利品のレアアイテム確率が上昇する。",
+
+	"item.nature_collapse.four_leaf_clover": "四つ葉のクローバー",
+	"item.nature_collapse.four_leaf_clover.desc1": "奇跡の幸運をもたらす四枚の葉。",
+	"item.nature_collapse.four_leaf_clover.desc2": "所持中: 幸運 +3 | 品質 +3 | レア確率 ×3.0 | 戦利品数量 ×2",
+	"item.nature_collapse.four_leaf_clover.desc3": "生成されるすべての戦利品の個数を2倍にする。",
+	"item.nature_collapse.four_leaf_clover.desc4": "16ブロック以内で就職した農民が「創生の種根」を取引しやすくなる。",
+
+	"item.nature_collapse.miracle_flower": "奇跡の花",
+	"item.nature_collapse.miracle_flower.desc1": "原初の根源樹を討伐した証。生命の奔流を宿す奇跡の花。",
+	"item.nature_collapse.miracle_flower.desc2": "ネザースター4つと十字に合成することで「不変の花」となる。",
+
+	"item.nature_collapse.miracle_root": "奇跡の根",
+	"item.nature_collapse.miracle_root.desc1": "原初の根源樹を討伐した証。理を司る奇跡の根。",
+	"item.nature_collapse.miracle_root.desc2": "ネザースター4つと十字に合成することで「帰化の剣」となる。",
+
+	"entity.nature_collapse.arboris": "原初の根源樹 アルボリス",
+	"entity.nature_collapse.arboris_bullet": "原初の幾何学弾幕",
+	"entity.nature_collapse.arboris_magic_circle": "原初の展開魔方陣",
+	"entity.nature_collapse.arboris.title": "原初の根源樹 アルボリス (Arboris, Heart of the Primeval Root)",
+	"entity.nature_collapse.arboris.awakening": "原初の根源樹が目覚めようとしている...",
+	"entity.nature_collapse.arboris.awakening_prelude": "原初の根の共鳴中... 隆起開始まで: %d秒",
+	"entity.nature_collapse.arboris.awakening_countdown": "アルボリス地上隆起中... 完全顕現まで: %d秒",
+
+	"message.nature_collapse.genesis_root.overworld_only": "創生の種根は現世でのみ力を発揮する。",
+	"message.nature_collapse.genesis_root.bedrock_only": "現世の最深部、岩盤に触れさせる必要がある。",
+	"message.nature_collapse.genesis_root.awakening_started": "【天地鳴動】最深部の岩盤から原初の共鳴が始まった...！（5秒後に地上へ隆起開始、30秒で完全顕現）",
+
 	"tooltip.nature_collapse.hold_shift": "[Shiftで詳細を見る]"
 }

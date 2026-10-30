@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " # ",
+    "#X#",
+    " # "
+  ],
+  "key": {
+    "X": {
+      "item": "nature_collapse:clover"
+    },
+    "#": {
+      "item": "minecraft:tall_grass"
+    }
+  },
+  "result": {
+    "item": "nature_collapse:four_leaf_clover",
+    "count": 1
+  }
+}

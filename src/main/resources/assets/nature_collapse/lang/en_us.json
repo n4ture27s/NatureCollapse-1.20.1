@@ -1,20 +1,66 @@
 {
+	"item_group.nature_collapse": "Nature Collapse",
 
-	"item_group.nature_collapse" : "Nature Collapse",
+	"key.categories.nature_collapse": "Nature Collapse",
+	"key.nature_collapse.open_range_gui": "Open Item Settings GUI",
 
-	"gui.nature_collapse.range_settings" : "Range Setting",
-	"gui.nature_collapse.flower_settings" : "Flower Setting",
-	"gui.nature_collapse.search_effect" : "Search",
+	"gui.nature_collapse.range_settings": "Range Settings - Naturalize Sword",
+	"gui.nature_collapse.flower_settings": "Effect Matrix - Nature Flower",
+	"gui.nature_collapse.search_effect": "Search effects...",
+
+	"gui.nature_collapse.feature.flight": "Flight Mobility",
+	"gui.nature_collapse.feature.invul": "Invulnerability & Safeguard",
+	"gui.nature_collapse.feature.saturation": "Saturation & Nutrition",
+	"gui.nature_collapse.feature.magnet": "Item & Exp Magnet",
+	"gui.nature_collapse.feature.speed": "Ground Agility & Speed",
+	"gui.nature_collapse.feature.aura": "Naturalize Aura Field",
+	"gui.nature_collapse.feature.vision": "Clear Vision & Night Sight",
 
 	"effect.nature_collapse.to_natural": "To Natural",
 
 	"item.nature_collapse.naturalize_sword": "Naturalize Sword",
-	"item.nature_collapse.naturalize_sword.subtext":"「Omnia ad initium suum redeunt.」",
+	"item.nature_collapse.naturalize_sword.subtext": "「Omnia ad initium suum redeunt.」",
 	"item.nature_collapse.naturalize_sword.desc": "return to nature.",
 
 	"item.nature_collapse.nature_flower": "Nature Flower",
-	"item.nature_collapse.nature_flower.subtext":"「Natura est norma, et numquam mutabitur.」",
+	"item.nature_collapse.nature_flower.subtext": "「Natura est norma, et numquam mutabitur.」",
 	"item.nature_collapse.nature_flower.desc": "keep natural.",
-	
+
+	"item.nature_collapse.genesis_root": "Genesis Root",
+	"item.nature_collapse.genesis_root.desc1": "「The earth fractures as the primeval roots awaken.」",
+	"item.nature_collapse.genesis_root.desc2": "Use on Bedrock in the Overworld to awaken.",
+	"item.nature_collapse.genesis_root.desc3": "※Caution: Eruption aggressively destroys surrounding terrain",
+
+	"item.nature_collapse.clover": "Clover",
+	"item.nature_collapse.clover.desc1": "A lucky leaf found in crops.",
+	"item.nature_collapse.clover.desc2": "Luck +1 | Quality +1 | Rare Rate ×1.5",
+	"item.nature_collapse.clover.desc3": "Increases rare loot drop chances while in inventory.",
+
+	"item.nature_collapse.four_leaf_clover": "Four-Leaf Clover",
+	"item.nature_collapse.four_leaf_clover.desc1": "Miraculous fortune of the four leaves.",
+	"item.nature_collapse.four_leaf_clover.desc2": "Luck +3 | Quality +3 | Rare Rate ×3.0 | Loot Count ×2",
+	"item.nature_collapse.four_leaf_clover.desc3": "All generated loot quantities are doubled.",
+	"item.nature_collapse.four_leaf_clover.desc4": "Farmers employed nearby may offer the Genesis Root.",
+
+	"item.nature_collapse.miracle_flower": "Miracle Flower",
+	"item.nature_collapse.miracle_flower.desc1": "Proof of conquering Arboris, blossoming with divine vital energy.",
+	"item.nature_collapse.miracle_flower.desc2": "Combine with 4 Nether Stars to forge the Nature Flower.",
+
+	"item.nature_collapse.miracle_root": "Miracle Root",
+	"item.nature_collapse.miracle_root.desc1": "Proof of conquering Arboris, imbued with eternal origin force.",
+	"item.nature_collapse.miracle_root.desc2": "Combine with 4 Nether Stars to forge the NaturaLize Sword.",
+
+	"entity.nature_collapse.arboris": "Arboris, Heart of the Primeval Root",
+	"entity.nature_collapse.arboris_bullet": "Primeval Geometry Danmaku",
+	"entity.nature_collapse.arboris_magic_circle": "Primeval Magic Circle",
+	"entity.nature_collapse.arboris.title": "Arboris, Heart of the Primeval Root",
+	"entity.nature_collapse.arboris.awakening": "The Primeval Root is Awakening...",
+	"entity.nature_collapse.arboris.awakening_prelude": "Genesis Resonance... Rising begins in: %ds",
+	"entity.nature_collapse.arboris.awakening_countdown": "Arboris Erupting to Surface... Full Manifestation: %ds",
+
+	"message.nature_collapse.genesis_root.overworld_only": "The Genesis Root can only awaken in the Overworld.",
+	"message.nature_collapse.genesis_root.bedrock_only": "Must be used on Bedrock at the deepest layer of the world.",
+	"message.nature_collapse.genesis_root.awakening_started": "【Cataclysm】The deepest bedrock resonates with primeval energy! (Rising begins in 5s, fully manifesting in 30s)",
+
 	"tooltip.nature_collapse.hold_shift": "[press Shift to view detail]"
 }

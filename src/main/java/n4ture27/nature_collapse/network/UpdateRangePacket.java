@@ -1,12 +1,11 @@
 package n4ture27.nature_collapse.network;
 
 import n4ture27.nature_collapse.item.NaturaLizeSword;
+import n4ture27.nature_collapse.utils.InventoryUtil;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.fml.ModList;
-import top.theillusivec4.curios.api.CuriosApi;
 
 import java.util.function.Supplier;
 
@@ -20,44 +19,31 @@ public class UpdateRangePacket {
         this.range = range;
         this.slotId = slotId;
         this.isCurio = isCurio;
-        this.curiosIdentifier = curiosIdentifier;
+        this.curiosIdentifier = curiosIdentifier != null ? curiosIdentifier : "";
     }
 
     public UpdateRangePacket(FriendlyByteBuf buf) {
         this.range = buf.readDouble();
         this.slotId = buf.readInt();
         this.isCurio = buf.readBoolean();
-        this.curiosIdentifier = buf.readUtf();
+        this.curiosIdentifier = buf.readUtf(64);
     }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeDouble(range);
         buf.writeInt(slotId);
         buf.writeBoolean(isCurio);
-        buf.writeUtf(curiosIdentifier);
+        buf.writeUtf(curiosIdentifier, 64);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
-                ItemStack stack = ItemStack.EMPTY;
+            if (player == null) return;
 
-                if (isCurio && ModList.get().isLoaded("curios")) {
-                    final ItemStack[] foundStack = {ItemStack.EMPTY};
-                    CuriosApi.getCuriosInventory(player).ifPresent(handler ->
-                            handler.getStacksHandler(curiosIdentifier).ifPresent(stacks ->
-                                    foundStack[0] = stacks.getStacks().getStackInSlot(slotId)
-                            )
-                    );
-                    stack = foundStack[0];
-                } else {
-                    stack = player.getInventory().getItem(slotId);
-                }
-
-                if (!stack.isEmpty() && stack.getItem() instanceof NaturaLizeSword) {
-                    stack.getOrCreateTag().putDouble("CustomRange", range);
-                }
+            ItemStack stack = InventoryUtil.getStackFromSlot(player, slotId, isCurio, curiosIdentifier);
+            if (!stack.isEmpty() && stack.getItem() instanceof NaturaLizeSword) {
+                InventoryUtil.setSwordRange(stack, range);
             }
         });
         ctx.get().setPacketHandled(true);

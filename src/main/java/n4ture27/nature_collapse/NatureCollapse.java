@@ -1,181 +1,180 @@
 package n4ture27.nature_collapse;
 
 import com.mojang.logging.LogUtils;
-
-import n4ture27.nature_collapse.network.UpdateRangePacket;
-import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
-import net.minecraftforge.fml.InterModComms;
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
-import top.theillusivec4.curios.api.SlotTypeMessage;
-import top.theillusivec4.curios.api.SlotTypePreset;
-import net.minecraftforge.fml.ModList;
+import n4ture27.nature_collapse.compat.CuriosCompat;
+import n4ture27.nature_collapse.effect.ToNatural;
+import n4ture27.nature_collapse.entity.ArborisBulletEntity;
+import n4ture27.nature_collapse.entity.ArborisEntity;
+import n4ture27.nature_collapse.entity.ArborisMagicCircleEntity;
+import n4ture27.nature_collapse.item.CloverItem;
+import n4ture27.nature_collapse.item.FourLeafCloverItem;
+import n4ture27.nature_collapse.item.GenesisRootItem;
+import n4ture27.nature_collapse.item.MiracleFlowerItem;
+import n4ture27.nature_collapse.item.MiracleRootItem;
 import n4ture27.nature_collapse.item.NaturaLizeSword;
 import n4ture27.nature_collapse.item.NatureFlower;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.KeyMapping;
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import n4ture27.nature_collapse.network.CameraShakePacket;
+import n4ture27.nature_collapse.network.UpdateFlowerConfigPacket;
+import n4ture27.nature_collapse.network.UpdateFlowerEffectsPacket;
+import n4ture27.nature_collapse.network.UpdateRangePacket;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.attributes.RangedAttribute;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.living.MobEffectEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-
-import java.util.Set;
-
 import org.slf4j.Logger;
 
-// The value here should match an entry in the META-INF/mods.toml file
+import java.lang.reflect.Field;
+
 @Mod(NatureCollapse.ModId)
 public class NatureCollapse {
-	// Define mod id in a common place for everything to reference
-	public static final String ModId = "nature_collapse";
-	// Directly reference a slf4j logger
-	public static final Logger Logger = LogUtils.getLogger();
-	// Create a Deferred Register to hold Blocks which will all be registered under
-	// the "examplemod" namespace
-	public static final DeferredRegister<Block> Blocks = DeferredRegister.create(ForgeRegistries.BLOCKS, ModId);
-	// Create a Deferred Register to hold Items which will all be registered under
-	// the "examplemod" namespace
-	public static final DeferredRegister<Item> Items = DeferredRegister.create(ForgeRegistries.ITEMS, ModId);
-	// Create a Deferred Register to hold CreativeModeTabs which will all be
-	// registered under the "examplemod" namespace
-	public static final DeferredRegister<CreativeModeTab> CreativeTabRegister = DeferredRegister
-			.create(Registries.CREATIVE_MODE_TAB, ModId);
-	public static final DeferredRegister<MobEffect> EffectRegister = DeferredRegister
-			.create(ForgeRegistries.MOB_EFFECTS, ModId);
+    public static final String ModId = "nature_collapse";
+    public static final Logger Logger = LogUtils.getLogger();
 
-	public static final RegistryObject<NaturaLizeSword> NaturelizeSword = Items.register("naturalize_sword",
-			() -> new NaturaLizeSword(new Item.Properties().fireResistant()));
-	public static final RegistryObject<NatureFlower> NatureFlower = Items.register("nature_flower",
-			() -> new NatureFlower(new Item.Properties().fireResistant()));
-	public static final RegistryObject<CreativeModeTab> CreativeTabs = CreativeTabRegister.register("example",
-			() -> CreativeModeTab.builder()
-					.title(Component.translatable("item_group." + ModId))
-					.icon(() -> new ItemStack(NatureFlower.get()))
-					.displayItems((params, output) -> {
-						output.accept(NaturelizeSword.get());
-						output.accept(NatureFlower.get());
-					})
-					.build());
+    public static final DeferredRegister<Item> Items = DeferredRegister.create(ForgeRegistries.ITEMS, ModId);
+    public static final DeferredRegister<EntityType<?>> Entities = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ModId);
+    public static final DeferredRegister<CreativeModeTab> CreativeTabRegister = DeferredRegister
+            .create(Registries.CREATIVE_MODE_TAB, ModId);
+    public static final DeferredRegister<MobEffect> EffectRegister = DeferredRegister
+            .create(ForgeRegistries.MOB_EFFECTS, ModId);
 
-	public static MinecraftServer Server;
-	
-	private static final String PROTOCOL_VERSION = "1";
-	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-			ResourceLocation.fromNamespaceAndPath(ModId, "main"),
-			() -> PROTOCOL_VERSION,
-			PROTOCOL_VERSION::equals,
-			PROTOCOL_VERSION::equals
-	);
+    public static final RegistryObject<NaturaLizeSword> NaturelizeSword = Items.register("naturalize_sword",
+            () -> new NaturaLizeSword(new Item.Properties().fireResistant()));
+    public static final RegistryObject<NatureFlower> NatureFlower = Items.register("nature_flower",
+            () -> new NatureFlower(new Item.Properties().fireResistant()));
+    public static final RegistryObject<GenesisRootItem> GenesisRoot = Items.register("genesis_root",
+            () -> new GenesisRootItem(new Item.Properties()));
+    public static final RegistryObject<CloverItem> Clover = Items.register("clover",
+            () -> new CloverItem(new Item.Properties()));
+    public static final RegistryObject<FourLeafCloverItem> FourLeafClover = Items.register("four_leaf_clover",
+            () -> new FourLeafCloverItem(new Item.Properties()));
+    public static final RegistryObject<MiracleFlowerItem> MiracleFlower = Items.register("miracle_flower",
+            () -> new MiracleFlowerItem(new Item.Properties()));
+    public static final RegistryObject<MiracleRootItem> MiracleRoot = Items.register("miracle_root",
+            () -> new MiracleRootItem(new Item.Properties()));
 
-	public NatureCollapse(FMLJavaModLoadingContext context) {
-		IEventBus modEventBus = context.getModEventBus();
+    public static final RegistryObject<EntityType<ArborisEntity>> ArborisEntityType = Entities.register("arboris",
+            () -> EntityType.Builder.of(ArborisEntity::new, MobCategory.MONSTER)
+                    .sized(5.0f, 12.0f)
+                    .clientTrackingRange(128)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("arboris"));
 
-		// Register the commonSetup method for modloading
-		modEventBus.addListener(this::commonSetup);
-		// Curios integration
-		modEventBus.addListener(this::enqueueIMC);
+    public static final RegistryObject<EntityType<ArborisBulletEntity>> ArborisBulletEntityType = Entities.register("arboris_bullet",
+            () -> EntityType.Builder.<ArborisBulletEntity>of(ArborisBulletEntity::new, MobCategory.MISC)
+                    .sized(0.8f, 0.8f)
+                    .clientTrackingRange(128)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("arboris_bullet"));
 
-		// Register the Deferred Register to the mod event bus so blocks get registered
-		Blocks.register(modEventBus);
-		// Register the Deferred Register to the mod event bus so items get registered
-		Items.register(modEventBus);
-		// Register the Deferred Register to the mod event bus so tabs get registered
-		CreativeTabRegister.register(modEventBus);
+    public static final RegistryObject<EntityType<ArborisMagicCircleEntity>> ArborisMagicCircleEntityType = Entities.register("arboris_magic_circle",
+            () -> EntityType.Builder.<ArborisMagicCircleEntity>of(ArborisMagicCircleEntity::new, MobCategory.MISC)
+                    .sized(3.0f, 3.0f)
+                    .clientTrackingRange(128)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("arboris_magic_circle"));
 
-		int id = 0;
-		CHANNEL.registerMessage(id++, UpdateRangePacket.class, UpdateRangePacket::encode, UpdateRangePacket::new, UpdateRangePacket::handle);
-		CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
-		CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
+    public static final RegistryObject<MobEffect> ToNaturalEffect = EffectRegister.register("to_natural",
+            ToNatural::new);
 
-		// Register ourselves for server and other game events we are interested in
-		MinecraftForge.EVENT_BUS.register(this);
+    public static final RegistryObject<CreativeModeTab> CreativeTabs = CreativeTabRegister.register("example",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("item_group." + ModId))
+                    .icon(() -> new ItemStack(NatureFlower.get()))
+                    .displayItems((params, output) -> {
+                        output.accept(NaturelizeSword.get());
+                        output.accept(NatureFlower.get());
+                        output.accept(GenesisRoot.get());
+                        output.accept(Clover.get());
+                        output.accept(FourLeafClover.get());
+                        output.accept(MiracleFlower.get());
+                        output.accept(MiracleRoot.get());
+                    })
+                    .build());
 
-		// Register our mod's ForgeConfigSpec so that Forge can create and load the
-		// config file for us
-		context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-	}
+    private static final String PROTOCOL_VERSION = "1";
+    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+            ResourceLocation.fromNamespaceAndPath(ModId, "main"),
+            () -> PROTOCOL_VERSION,
+            PROTOCOL_VERSION::equals,
+            PROTOCOL_VERSION::equals
+    );
 
-	private void enqueueIMC(final InterModEnqueueEvent event) {
-		if (ModList.get().isLoaded("curios")) {
-			InterModComms.sendTo("curios", "register_type", () -> new SlotTypeMessage.Builder("nature_flower")
-				.icon(ResourceLocation.fromNamespaceAndPath("curios", "slot/empty_charm_slot"))
-				.build());
-		}
-	}
+    public NatureCollapse(FMLJavaModLoadingContext context) {
+        uncapMaxHealthAttribute();
 
-	private void commonSetup(final FMLCommonSetupEvent event) {
-		Logger.info("HELLO FROM COMMON SETUP");
+        IEventBus modEventBus = context.getModEventBus();
 
-		// if (Config.logDirtBlock)
-		// Logger.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
+        modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::enqueueIMC);
+        modEventBus.addListener(this::registerAttributes);
 
-		Logger.info(Config.magicNumberIntroduction + Config.magicNumber);
+        Items.register(modEventBus);
+        Entities.register(modEventBus);
+        CreativeTabRegister.register(modEventBus);
+        EffectRegister.register(modEventBus);
 
-		Config.items.forEach((item) -> Logger.info("ITEM >> {}", item.toString()));
-	}
+        int id = 0;
+        CHANNEL.registerMessage(id++, UpdateRangePacket.class, UpdateRangePacket::encode, UpdateRangePacket::new, UpdateRangePacket::handle);
+        CHANNEL.registerMessage(id++, UpdateFlowerEffectsPacket.class, UpdateFlowerEffectsPacket::encode, UpdateFlowerEffectsPacket::new, UpdateFlowerEffectsPacket::handle);
+        CHANNEL.registerMessage(id++, UpdateFlowerConfigPacket.class, UpdateFlowerConfigPacket::encode, UpdateFlowerConfigPacket::new, UpdateFlowerConfigPacket::handle);
+        CHANNEL.registerMessage(id++, CameraShakePacket.class, CameraShakePacket::encode, CameraShakePacket::new, CameraShakePacket::handle);
 
-	// You can use SubscribeEvent and let the Event Bus discover methods to call
-	@SubscribeEvent
-	public void onServerStarting(ServerStartingEvent event) {
-		// Do something when the server starts
-		Logger.info("HELLO from server starting");
+        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+    }
 
-		Server = event.getServer();
-	}
+    private void registerAttributes(EntityAttributeCreationEvent event) {
+        event.put(ArborisEntityType.get(), ArborisEntity.createAttributes().build());
+    }
 
-	// You can use EventBusSubscriber to automatically register all static methods
-	// in the class annotated with @SubscribeEvent
-	@Mod.EventBusSubscriber(modid = ModId, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-	public static class ClientModEvents {
-		public static final KeyMapping OPEN_RANGE_GUI = new KeyMapping("key.nature_collapse.open_range_gui", InputConstants.Type.KEYSYM, InputConstants.KEY_K, "key.categories.nature_collapse");
+    private void enqueueIMC(final InterModEnqueueEvent event) {
+        CuriosCompat.enqueueImc();
+    }
 
-		@SubscribeEvent
-		public static void onClientSetup(FMLClientSetupEvent event) {
-			// Some client setup code
-			Logger.info("HELLO FROM CLIENT SETUP");
-			Logger.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
-		}
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        uncapMaxHealthAttribute();
+        Logger.info("{} initialized.", ModId);
+    }
 
-		@SubscribeEvent
-		public static void onKeyRegister(RegisterKeyMappingsEvent event) {
-			event.register(OPEN_RANGE_GUI);
-		}
-	}
+    public static void uncapMaxHealthAttribute() {
+        try {
+            Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+            unsafeField.setAccessible(true);
+            sun.misc.Unsafe unsafe = (sun.misc.Unsafe) unsafeField.get(null);
+            for (Field f : RangedAttribute.class.getDeclaredFields()) {
+                if (f.getType() == double.class) {
+                    long offset = unsafe.objectFieldOffset(f);
+                    double val = unsafe.getDouble(Attributes.MAX_HEALTH, offset);
+                    if (Math.abs(val - 1024.0D) < 0.1) {
+                        unsafe.putDouble(Attributes.MAX_HEALTH, offset, 1_000_000_000.0D);
+                        Logger.info("Successfully uncapped Attributes.MAX_HEALTH max value to 1,000,000,000.0!");
+                        break;
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            Logger.error("Failed to uncap Attributes.MAX_HEALTH", t);
+        }
+    }
 }

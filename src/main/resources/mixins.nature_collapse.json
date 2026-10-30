@@ -6,12 +6,21 @@
 	"client": [],
 	"mixins": [
 		"CommandSourceStackMixin",
+		"EntityAccessor",
 		"EntityMixin",
 		"EntitySelectorMixin",
-		"EntityTickListMixin",
 		"LivingEntityAccessor",
 		"LivingEntityMixin",
-		"ServerPlayerMixin"
+		"LootContextMixin",
+		"LootPoolEntryBaseMixin",
+		"LootTableMixin",
+		"PlayerAccessor",
+		"PlayerListMixin",
+		"PlayerMixin",
+		"ServerGamePacketListenerImplMixin",
+		"ServerLevelAccessor",
+		"ServerPlayerMixin",
+		"SynchedEntityDataMixin"
 	],
 	"server": [
 	],

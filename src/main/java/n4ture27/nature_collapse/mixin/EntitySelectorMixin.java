@@ -1,8 +1,7 @@
 package n4ture27.nature_collapse.mixin;
 
-import n4ture27.nature_collapse.NatureCollapse;
-import net.minecraft.commands.CommandSourceStack;
 import n4ture27.nature_collapse.utils.InventoryUtil;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -13,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Mixin(value = EntitySelector.class, priority = 10000)
 public class EntitySelectorMixin {

@@ -1,237 +1,529 @@
 package n4ture27.nature_collapse;
 
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import com.mojang.blaze3d.platform.InputConstants;
-
-import n4ture27.nature_collapse.item.NaturaLizeSword;
-import n4ture27.nature_collapse.utils.InventoryUtil;
+import n4ture27.nature_collapse.utils.CloverUtil;
 import n4ture27.nature_collapse.utils.INaturalizable;
-import n4ture27.nature_collapse.item.NatureFlower;
-import n4ture27.nature_collapse.ui.RangeAdjustmentScreen;
-import n4ture27.nature_collapse.ui.FlowerEffectSettingsScreen;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.registries.BuiltInRegistries;
+import n4ture27.nature_collapse.utils.InventoryUtil;
+import n4ture27.nature_collapse.utils.NaturalizeUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CocoaBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobEffectEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
-import top.theillusivec4.curios.api.CuriosApi;
-import top.theillusivec4.curios.common.inventory.CurioSlot;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = NatureCollapse.ModId, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class EventHandler {
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public static void onAttackedEvent(LivingAttackEvent ev) {
-		if (ev.getEntity() instanceof Player player) {
-			if (!player.level().isClientSide()) {
-				if (InventoryUtil.hasFlower(player)) {
-					ev.setCanceled(true);
-					NatureCollapse.Logger.debug("Attacked");
-				}
-			}
-		}
-	}
 
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public static void onDamageEvent(LivingDamageEvent ev) {
-		if (ev.getEntity() instanceof Player player) {
-			if (!player.level().isClientSide()) {
-				if (InventoryUtil.hasFlower(player)) {
-					ev.setCanceled(true);
-					NatureCollapse.Logger.debug("Damage");
-				}
-			}
-		}
-	}
+    @Nullable
+    public static InventoryUtil.FlowerConfig getActiveFlowerConfig(Player player) {
+        return InventoryUtil.getActiveFlowerConfig(player);
+    }
 
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public static void onHurtEvent(LivingHurtEvent ev) {
-		if (ev.getEntity() instanceof Player player) {
-			if (!player.level().isClientSide()) {
-				if (InventoryUtil.hasFlower(player)) {
-					ev.setCanceled(true);
-					NatureCollapse.Logger.debug("Hurt");
-				}
-			}
-		}
-	}
-
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public static void onDeathEvent(LivingDeathEvent ev) {
-		if (ev.getEntity() instanceof Player player) {
-			if (!player.level().isClientSide()) {
-				if (InventoryUtil.hasFlower(player)) {
-					ev.setCanceled(true);
-					player.setHealth(player.getMaxHealth());
-					player.removeAllEffects();
-					player.invulnerableTime = 10;
-					player.hurtDuration = 20;
-					player.hurtTime = 20;
-				}
-                // If the player actually dies (not cancelled by flower protection), reset naturalized state
-                if (!ev.isCanceled() && ((INaturalizable) player).nature_collapse$isNaturalized()) {
-                    ((INaturalizable) player).nature_collapse$setNaturalized(false);
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onPlayerAttackTargetHighest(AttackEntityEvent event) {
+        Player player = event.getEntity();
+        if (player != null && !player.level().isClientSide()) {
+            ItemStack held = player.getMainHandItem();
+            if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
+                net.minecraft.world.entity.Entity target = event.getTarget();
+                if (target != null) {
+                    NaturalizeUtils.naturalize(target, player);
                 }
-			}
-		}
-	}
+            }
+        }
+    }
 
-	@SubscribeEvent(priority = EventPriority.HIGH)
-	public static void onTick(TickEvent.PlayerTickEvent ev) {
-		var player = ev.player;
-		if (ev.phase == TickEvent.Phase.START && !player.level().isClientSide()) {
-			InventoryUtil.forEachFlower(player, stack -> applyFlowerEffects(player, stack));
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onAttackedEventHighest(LivingAttackEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
 
-			if (InventoryUtil.hasFlower(player)) {
-				var food = player.getFoodData();
-				if (food.getFoodLevel() < 20 || food.getSaturationLevel() < 20.0f) {
-					food.setFoodLevel(20);
-					food.setSaturation(20f);
-				}
+        DamageSource src = ev.getSource();
+        if (src != null && src.getEntity() instanceof Player attacker && !attacker.level().isClientSide()) {
+            ItemStack held = attacker.getMainHandItem();
+            if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
+                LivingEntity target = ev.getEntity();
+                if (target != null && target != attacker) {
+                    NaturalizeUtils.naturalize(target, attacker);
+                }
+            }
+        }
+    }
 
-				// 飛行の初期設定
-				if (!player.getAbilities().mayfly && !((INaturalizable) player).nature_collapse$isNaturalized()) {
-					player.getAbilities().mayfly = true;
-					player.onUpdateAbilities();
-				}
-			}
-		}
-	}
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onAttackedEventLowest(LivingAttackEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
+    }
 
-	// 他のModによる飛行無効化への対策（ティックの最後で再強制）
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public static void onFlightEnforcement(TickEvent.PlayerTickEvent ev) {
-		Player player = ev.player;
-		if (ev.phase == TickEvent.Phase.END && !player.level().isClientSide()) {
-			boolean hasFlower = InventoryUtil.hasFlower(player) && !((INaturalizable) player).nature_collapse$isNaturalized();
-			
-			if (hasFlower) {
-				if (!player.getAbilities().mayfly) {
-					player.getAbilities().mayfly = true;
-					player.onUpdateAbilities();
-				}
-			} else if (!player.isCreative() && !player.isSpectator() && player.getAbilities().mayfly) {
-				// 花を持っていない、かつサバイバル/アドベンチャーなら飛行を解除
-				player.getAbilities().mayfly = false;
-				player.getAbilities().flying = false;
-				player.onUpdateAbilities();
-			}
-		}
-	}
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onDamageEventHighest(LivingDamageEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
+    }
 
-	private static void applyFlowerEffects(Player player, ItemStack flower) {
-		CompoundTag tag = flower.getTag();
-		if (tag != null && tag.contains("SelectedEffects")) {
-			ListTag list = tag.getList("SelectedEffects", Tag.TAG_COMPOUND);
-			for (int i = 0; i < list.size(); i++) {
-				CompoundTag effectData = list.getCompound(i);
-				MobEffect effect = ForgeRegistries.MOB_EFFECTS
-						.getValue(ResourceLocation.tryParse(effectData.getString("Id")));
-				if (effect != null) {
-					int amplifier = Math.max(0, effectData.getInt("Level") - 1);
-					player.addEffect(new MobEffectInstance(effect, 40, amplifier, false, false));
-				}
-			}
-		}
-	}
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onDamageEventLowest(LivingDamageEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
+    }
 
-	// ここでねいちゃーを殺す(サンキューチャッピー)
-	@SubscribeEvent(priority = EventPriority.HIGH)
-	public static void onEffectApplicable(MobEffectEvent.Applicable ev) {
-		LivingEntity entity = ev.getEntity();
-		var effect = ev.getEffectInstance();
-		if (entity instanceof Player player) {
-			if (InventoryUtil.hasFlower(player) && !((INaturalizable) player).nature_collapse$isNaturalized()) {
-				ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect());
-				if (effectId != null) {
-					String namespace = effectId.getNamespace();
-					if (!namespace.equals("minecraft") && !namespace.equals(NatureCollapse.ModId)) {
-						// 有害な効果（HARMFUL）かつ、ハナで許可されていない場合のみ拒否する
-						// これにより、他のCuriosアイテムによるバフ（Speed等）が機能するようになります
-						if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL && !isEffectAllowedByFlower(player, effectId)) {
-							ev.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
-						}
-					}
-				}
-			}
-		}
-	}
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onHurtEventHighest(LivingHurtEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
 
-	private static boolean isEffectAllowedByFlower(Player player, ResourceLocation effectId) {
-		List<Boolean> found = new ArrayList<>();
-		InventoryUtil.forEachFlower(player, stack -> {
-			if (stack.hasTag()) {
-				ListTag list = stack.getTag().getList("SelectedEffects", Tag.TAG_COMPOUND);
-				for (int j = 0; j < list.size(); j++) {
-					if (list.getCompound(j).getString("Id").equals(effectId.toString()))
-						found.add(true);
-				}
-			}
-		});
-		return !found.isEmpty();
-	}
+        DamageSource src = ev.getSource();
+        if (src != null && src.getEntity() instanceof Player attacker && !attacker.level().isClientSide()) {
+            ItemStack held = attacker.getMainHandItem();
+            if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
+                LivingEntity target = ev.getEntity();
+                if (target != null && target != attacker) {
+                    NaturalizeUtils.naturalize(target, attacker);
+                }
+            }
+        }
+    }
 
-	@SubscribeEvent
-	public static void onScreenKey(ScreenEvent.KeyPressed.Pre ev) {
-		if (ev.getScreen() instanceof AbstractContainerScreen<?> container) {
-			if (NatureCollapse.ClientModEvents.OPEN_RANGE_GUI
-					.isActiveAndMatches(InputConstants.getKey(ev.getKeyCode(), ev.getScanCode()))) {
-				Slot slot = container.getSlotUnderMouse();
-				if (slot != null && !slot.getItem().isEmpty()) {
-					boolean isCurio = false;
-					String identifier = "";
-					int slotIndex = slot.getContainerSlot();
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onHurtEventLowest(LivingHurtEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+        }
+    }
 
-					// Curiosスロットの判定をAPI経由でより確実に実行
-					if (ModList.get().isLoaded("curios")) {
-						if (slot instanceof CurioSlot curiosSlot) {
-							isCurio = true;
-							identifier = curiosSlot.getIdentifier();
-							slotIndex = curiosSlot.getSlotIndex();
-						}
-					}
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onDeathEventHighest(LivingDeathEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+            player.setHealth(player.getMaxHealth());
+            player.removeAllEffects();
+            player.deathTime = 0;
+        }
+    }
 
-					// アイテムの型をチェックしてGUIを表示
-					ItemStack stack = slot.getItem();
-					if (stack.getItem() instanceof NaturaLizeSword) {
-						Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(slot.getItem(),
-								slotIndex, isCurio, identifier));
-						ev.setCanceled(true);
-					} else if (stack.getItem() instanceof NatureFlower) {
-						Minecraft.getInstance().setScreen(new FlowerEffectSettingsScreen(slot.getItem(),
-								slotIndex, isCurio, identifier)); // Updated constructor call
-						ev.setCanceled(true);
-					}
-				}
-			}
-		}
-	}
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onDeathEventLowest(LivingDeathEvent ev) {
+        if (ev.getEntity() instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
+            ev.setCanceled(true);
+            player.setHealth(player.getMaxHealth());
+            player.removeAllEffects();
+            player.deathTime = 0;
+            return;
+        }
+
+        // 帰化状態（Naturalized）のエンティティ（他MODのSoul Protection持ちプレイヤー等含む）への即死処理
+        // 他MODが HIGHEST 等でキャンセルした場合でも、最優先でキャンセルを解除して死亡を貫通・確定させる
+        LivingEntity living = ev.getEntity();
+        if (living != null && ((INaturalizable) living).nature_collapse$isNaturalized()) {
+            ev.setCanceled(false);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onEntityJoinLevel(EntityJoinLevelEvent ev) {
+        net.minecraft.world.entity.Entity entity = ev.getEntity();
+        if (entity == null || entity instanceof Player) {
+            return;
+        }
+
+        // 帰化・抹消済みエンティティの再スポーン・再参加（他MODの自動リスポーン処理等）を汎用的に完全阻止
+        if (NaturalizeUtils.isNaturalizedUUID(entity.getUUID())
+                || (entity instanceof LivingEntity living && ((INaturalizable) living).nature_collapse$isNaturalized())
+                || entity.getPersistentData().getBoolean("nature_collapse.is_naturalized")) {
+            ev.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onTick(TickEvent.PlayerTickEvent ev) {
+        Player player = ev.player;
+        if (ev.phase == TickEvent.Phase.START && !player.level().isClientSide()) {
+            tickPlayerFlowerDirect(player);
+        }
+    }
+
+    public static void tickPlayerFlowerDirect(Player player) {
+        if (player == null || player.level().isClientSide()) return;
+
+        // 同一 tick 内での重複実行を防止
+        int currentTick = player.tickCount;
+        if (player.getPersistentData().getInt("nature_collapse.last_flower_tick") == currentTick) {
+            return;
+        }
+        player.getPersistentData().putInt("nature_collapse.last_flower_tick", currentTick);
+
+        InventoryUtil.FlowerConfig cfg = getActiveFlowerConfig(player);
+        if (cfg == null) return;
+
+        // 0. 無敵状態の確実な維持
+        if (cfg.invulEnabled()) {
+            if (player.getHealth() < player.getMaxHealth()) {
+                player.setHealth(player.getMaxHealth());
+            }
+            if (player.deathTime > 0) {
+                player.deathTime = 0;
+            }
+        }
+
+        // 1. エフェクト自動付与
+        if (cfg.effectsEnabled()) {
+            InventoryUtil.forEachFlower(player, stack -> applyFlowerEffects(player, stack));
+        }
+
+        // 2. 飽食・満腹度維持
+        if (cfg.saturationEnabled() && Config.flowerSaturationEnabled) {
+            var food = player.getFoodData();
+            if (food.getFoodLevel() < 20 || food.getSaturationLevel() < 20.0f) {
+                food.setFoodLevel(20);
+                food.setSaturation(20.0f);
+            }
+        }
+
+        // 3. 飛行制御・速度適用
+        if (cfg.flightEnabled() && Config.flowerFlightEnabled) {
+            if (!player.getAbilities().mayfly) {
+                player.getAbilities().mayfly = true;
+                player.onUpdateAbilities();
+            }
+            player.getAbilities().setFlyingSpeed(cfg.flightSpeedH());
+        }
+
+        // 4. 磁石（ドロップアイテム＆経験値吸引）
+        if (cfg.magnetEnabled()) {
+            double r = cfg.magnetRange();
+            AABB magnetBox = player.getBoundingBox().inflate(r);
+            Vec3 pPos = player.position().add(0, 0.5, 0);
+
+            List<ItemEntity> items = player.level().getEntitiesOfClass(ItemEntity.class, magnetBox);
+            for (ItemEntity item : items) {
+                if (item.isAlive() && !item.hasPickUpDelay()) {
+                    Vec3 diff = pPos.subtract(item.position());
+                    if (diff.lengthSqr() > 0.05) {
+                        item.setDeltaMovement(diff.normalize().scale(0.45));
+                    }
+                }
+            }
+
+            List<ExperienceOrb> orbs = player.level().getEntitiesOfClass(ExperienceOrb.class, magnetBox);
+            for (ExperienceOrb orb : orbs) {
+                if (orb.isAlive()) {
+                    Vec3 diff = pPos.subtract(orb.position());
+                    if (diff.lengthSqr() > 0.05) {
+                        orb.setDeltaMovement(diff.normalize().scale(0.45));
+                    }
+                }
+            }
+        }
+
+        // 5. 帰化オーラ（周囲敵対Mob・ボスの自動消滅）
+        if (cfg.auraEnabled()) {
+            double r = cfg.auraRange();
+            AABB auraBox = player.getBoundingBox().inflate(r);
+
+            // LivingEntity（Mob、Monster、Boss等全般）の自動帰化消滅
+            List<LivingEntity> livingEntities = player.level().getEntitiesOfClass(
+                    LivingEntity.class,
+                    auraBox,
+                    target -> target != player
+                            && !(target instanceof Player other && InventoryUtil.hasFlower(other))
+                            && !(target instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() == player)
+                            && !target.isRemoved()
+                            && !((INaturalizable) target).nature_collapse$isNaturalized()
+            );
+            for (LivingEntity target : livingEntities) {
+                NaturalizeUtils.naturalize(target, player);
+            }
+
+            // 飛来する投射物の消滅
+            List<Projectile> projectiles = player.level().getEntitiesOfClass(Projectile.class, auraBox);
+            for (Projectile proj : projectiles) {
+                if (proj.isAlive() && proj.getOwner() != player) {
+                    proj.discard();
+                }
+            }
+
+            // 環境ハザード・残留攻撃ゾーン（残留効果雲、エヴォーカーの牙、設置型トラップ等）の自動浄化
+            List<net.minecraft.world.entity.Entity> hazardEntities = player.level().getEntities(
+                    player,
+                    auraBox,
+                    target -> target != player
+                            && !(target instanceof LivingEntity)
+                            && !(target instanceof Projectile)
+                            && !(target instanceof ItemEntity)
+                            && !(target instanceof ExperienceOrb)
+                            && !(target instanceof net.minecraft.world.entity.vehicle.AbstractMinecart)
+                            && !(target instanceof net.minecraft.world.entity.vehicle.Boat)
+                            && !(target instanceof net.minecraft.world.entity.decoration.HangingEntity)
+                            && !(target instanceof net.minecraft.world.entity.item.FallingBlockEntity)
+                            && !target.isRemoved()
+            );
+            for (net.minecraft.world.entity.Entity hazard : hazardEntities) {
+                if (hazard instanceof net.minecraft.world.entity.TraceableEntity traceable && traceable.getOwner() == player) {
+                    continue;
+                }
+                NaturalizeUtils.purgeEntityFromWorld(hazard);
+            }
+        }
+
+        // 6. クリア視界（暗視）
+        if (cfg.visionEnabled()) {
+            MobEffectInstance vision = player.getEffect(MobEffects.NIGHT_VISION);
+            if (vision == null || vision.getDuration() <= 220) {
+                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0, false, false));
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onFlightEnforcement(TickEvent.PlayerTickEvent ev) {
+        Player player = ev.player;
+        if (ev.phase == TickEvent.Phase.END && !player.level().isClientSide()) {
+            InventoryUtil.FlowerConfig cfg = getActiveFlowerConfig(player);
+            boolean shouldFly = cfg != null && cfg.flightEnabled() && Config.flowerFlightEnabled;
+
+            if (shouldFly) {
+                if (!player.getAbilities().mayfly) {
+                    player.getAbilities().mayfly = true;
+                    player.onUpdateAbilities();
+                }
+            } else if (!player.isCreative() && !player.isSpectator() && player.getAbilities().mayfly) {
+                player.getAbilities().mayfly = false;
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+            }
+        }
+    }
+
+    private static boolean isProtectedByFlower(Player player) {
+        return InventoryUtil.hasFlower(player) && !((INaturalizable) player).nature_collapse$isNaturalized();
+    }
+
+    private static void applyFlowerEffects(Player player, ItemStack flower) {
+        CompoundTag tag = flower.getTag();
+        if (tag == null || !tag.contains(InventoryUtil.TAG_SELECTED_EFFECTS, Tag.TAG_LIST)) {
+            return;
+        }
+
+        ListTag list = tag.getList(InventoryUtil.TAG_SELECTED_EFFECTS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag effectData = list.getCompound(i);
+            ResourceLocation id = ResourceLocation.tryParse(effectData.getString(InventoryUtil.TAG_EFFECT_ID));
+            if (id == null) continue;
+
+            MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(id);
+            if (effect == null) continue;
+
+            int level = Mth.clamp(effectData.getInt(InventoryUtil.TAG_EFFECT_LEVEL),
+                    InventoryUtil.MIN_EFFECT_LEVEL, InventoryUtil.MAX_EFFECT_LEVEL);
+            int amplifier = level - 1;
+
+            int configuredDuration = effectData.contains(InventoryUtil.TAG_EFFECT_DURATION, Tag.TAG_ANY_NUMERIC)
+                    ? Mth.clamp(effectData.getInt(InventoryUtil.TAG_EFFECT_DURATION),
+                    InventoryUtil.MIN_EFFECT_DURATION, InventoryUtil.MAX_EFFECT_DURATION)
+                    : InventoryUtil.DEFAULT_EFFECT_DURATION;
+
+            int targetDuration = Math.max(configuredDuration, 300);
+            int refreshThreshold = Math.min(220, targetDuration - 40);
+
+            MobEffectInstance existing = player.getEffect(effect);
+            if (existing == null || existing.getAmplifier() != amplifier || existing.getDuration() <= refreshThreshold) {
+                player.addEffect(new MobEffectInstance(effect, targetDuration, amplifier, false, false));
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onEffectApplicable(MobEffectEvent.Applicable ev) {
+        LivingEntity entity = ev.getEntity();
+        MobEffectInstance effectInstance = ev.getEffectInstance();
+        if (entity instanceof Player player && isProtectedByFlower(player)) {
+            InventoryUtil.FlowerConfig cfg = getActiveFlowerConfig(player);
+            if (cfg != null && cfg.invulEnabled()) {
+                ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(effectInstance.getEffect());
+                if (effectId != null) {
+                    if (effectInstance.getEffect().getCategory() == MobEffectCategory.HARMFUL
+                            && !isEffectAllowedByFlower(player, effectId)) {
+                        ev.setResult(Event.Result.DENY);
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isEffectAllowedByFlower(Player player, ResourceLocation effectId) {
+        String targetId = effectId.toString();
+        boolean[] allowed = {false};
+        InventoryUtil.forEachFlower(player, stack -> {
+            if (allowed[0] || !stack.hasTag()) return;
+            CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains(InventoryUtil.TAG_SELECTED_EFFECTS, Tag.TAG_LIST)) {
+                ListTag list = tag.getList(InventoryUtil.TAG_SELECTED_EFFECTS, Tag.TAG_COMPOUND);
+                for (int j = 0; j < list.size(); j++) {
+                    if (targetId.equals(list.getCompound(j).getString(InventoryUtil.TAG_EFFECT_ID))) {
+                        allowed[0] = true;
+                        break;
+                    }
+                }
+            }
+        });
+        return allowed[0];
+    }
+
+    /**
+     * 全ての作物から 0.077% の確率でクローバーをドロップする
+     */
+    @SubscribeEvent
+    public static void onCropBreak(BlockEvent.BreakEvent event) {
+        if (event.getLevel() instanceof ServerLevel sl && !sl.isClientSide()) {
+            BlockState state = event.getState();
+            if (isMatureCrop(state)) {
+                if (sl.random.nextFloat() < 0.00077f) {
+                    BlockPos pos = event.getPos();
+                    ItemEntity item = new ItemEntity(sl, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            new ItemStack(NatureCollapse.Clover.get()));
+                    item.setDefaultPickUpDelay();
+                    sl.addFreshEntity(item);
+                }
+            }
+        }
+    }
+
+    private static boolean isMatureCrop(BlockState state) {
+        Block block = state.getBlock();
+        if (block instanceof CropBlock crop) {
+            return crop.isMaxAge(state);
+        }
+        if (state.is(BlockTags.CROPS)) {
+            for (net.minecraft.world.level.block.state.properties.Property<?> prop : state.getProperties()) {
+                if (prop.getName().equals("age") && prop instanceof net.minecraft.world.level.block.state.properties.IntegerProperty intProp) {
+                    int max = java.util.Collections.max(intProp.getPossibleValues());
+                    return state.getValue(intProp) >= max;
+                }
+            }
+            return true;
+        }
+        if (block instanceof NetherWartBlock) {
+            return state.getValue(NetherWartBlock.AGE) >= 3;
+        }
+        if (block instanceof CocoaBlock) {
+            return state.getValue(CocoaBlock.AGE) >= 2;
+        }
+        return false;
+    }
+
+    /**
+     * 農民村人の就職判定 & 四つ葉のクローバー（16ブロック以内）による創生の種根取引ブースト
+     */
+    @SubscribeEvent
+    public static void onVillagerTick(LivingEvent.LivingTickEvent event) {
+        if (event.getEntity() instanceof Villager villager && !villager.level().isClientSide()
+                && villager.level() instanceof ServerLevel sl) {
+
+            // 1秒に1回チェック
+            if (villager.tickCount % 20 != 0) return;
+
+            VillagerProfession prof = villager.getVillagerData().getProfession();
+
+            // 1. 農民への新規就職判定
+            if (prof == VillagerProfession.FARMER) {
+                if (!villager.getPersistentData().getBoolean("nature_collapse.farmer_evaluated")) {
+                    villager.getPersistentData().putBoolean("nature_collapse.farmer_evaluated", true);
+
+                    // 16ブロック以内の全プレイヤーをチェック（他プレイヤーが複数持っていても増加は1つのみ適用）
+                    AABB searchBox = villager.getBoundingBox().inflate(16.0);
+                    List<Player> nearbyPlayers = sl.getEntitiesOfClass(Player.class, searchBox);
+                    boolean hasFourLeaf = false;
+                    for (Player p : nearbyPlayers) {
+                        if (CloverUtil.hasFourLeafClover(p)) {
+                            hasFourLeaf = true;
+                            break;
+                        }
+                    }
+
+                    if (hasFourLeaf) {
+                        villager.getPersistentData().putBoolean("nature_collapse.has_four_leaf_boost", true);
+                        // 就職ブーストの視覚的演出
+                        sl.sendParticles(ParticleTypes.HAPPY_VILLAGER, villager.getX(), villager.getY() + 1.2, villager.getZ(),
+                                12, 0.4, 0.4, 0.4, 0.1);
+                    }
+                }
+
+                // 2. 達人（Level 5）到達時の「創生の種根」取引登録
+                int level = villager.getVillagerData().getLevel();
+                if (level >= 5 && !villager.getPersistentData().getBoolean("nature_collapse.master_trades_added")) {
+                    villager.getPersistentData().putBoolean("nature_collapse.master_trades_added", true);
+
+                    boolean boosted = villager.getPersistentData().getBoolean("nature_collapse.has_four_leaf_boost");
+                    // 通常確率: 2% (ごく稀)、四つ葉ブースト時: 80% (大幅上昇)
+                    float chance = boosted ? 0.80f : 0.02f;
+
+                    if (sl.random.nextFloat() < chance) {
+                        // エメラルド2スタック（64 + 64 = 128個）と創生の種根1個の取引
+                        MerchantOffer genesisTrade = new MerchantOffer(
+                                new ItemStack(Items.EMERALD, 64),
+                                new ItemStack(Items.EMERALD, 64),
+                                new ItemStack(NatureCollapse.GenesisRoot.get()),
+                                1, // 最大取引回数
+                                30, // 獲得XP
+                                0.05f // 価格変動乗数
+                        );
+                        villager.getOffers().add(genesisTrade);
+
+                        sl.sendParticles(ParticleTypes.COMPOSTER, villager.getX(), villager.getY() + 1.2, villager.getZ(),
+                                15, 0.5, 0.5, 0.5, 0.1);
+                    }
+                }
+            }
+        }
+    }
 }

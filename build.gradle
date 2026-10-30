@@ -149,7 +149,7 @@ dependencies {
         jarJar.ranged(it, "[0.4.1,)")
     }
     
-    // Curios API - 1.20.1向けの安定版を指定
+    // Curios API - 1.20.1向けの安定版を指宁E
     implementation fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1")
 }
 
@@ -187,6 +187,7 @@ tasks.named('jar', Jar).configure {
     }
 
     // This is the preferred method to reobfuscate your jar file
+    from("${buildDir}/tmp/compileJava/mixins.nature_collapse.refmap.json")
     finalizedBy 'reobfJar'
 }
 
@@ -211,13 +212,17 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
-
-    options.compilerArgs += [
-        "-AreobfSrgFile=${project(':').file('build/createSrgs/output.srg')}",
-        "-AoutRefMapFile=${buildDir}/resources/main/mixins.nature_collapse.refmap.json"
-    ]
+    doLast {
+        copy {
+            from "${buildDir}/tmp/compileJava/mixins.nature_collapse.refmap.json"
+            into "${buildDir}/resources/main"
+        }
+        copy {
+            from "${buildDir}/tmp/compileJava/mixins.nature_collapse.refmap.json"
+            into "${buildDir}/classes/java/main"
+        }
+    }
 }
-
 tasks.withType(Jar).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
