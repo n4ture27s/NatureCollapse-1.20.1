@@ -69,12 +69,14 @@ public abstract class LootTableMixin {
 
         final int countMultiplier = player != null ? CloverUtil.getCountMultiplier(player) : 1;
 
-        // 四つ葉所持時: 出力ItemStackの数量を2倍にする
+        // 四つ葉所持時: 出力ItemStackの数量を倍加 (スタック上限超過による不具合を防ぐため安全に複製出力)
         if (countMultiplier > 1) {
             return stack -> {
                 if (!stack.isEmpty()) {
-                    stack.setCount(stack.getCount() * countMultiplier);
                     output.accept(stack);
+                    for (int i = 1; i < countMultiplier; i++) {
+                        output.accept(stack.copy());
+                    }
                 }
             };
         }

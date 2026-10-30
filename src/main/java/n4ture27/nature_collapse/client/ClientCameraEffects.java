@@ -17,10 +17,13 @@ public class ClientCameraEffects {
     private static final Random RANDOM = new Random();
 
     public static void addShake(float intensity, int duration) {
-        if (intensity > currentIntensity || remainingDuration <= 0) {
-            currentIntensity = intensity;
+        if (!Float.isFinite(intensity) || intensity <= 0.0f || duration <= 0) return;
+        float clampedIntensity = Math.min(intensity, 10.0f);
+        int clampedDuration = Math.min(duration, 200);
+        if (clampedIntensity > currentIntensity || remainingDuration <= 0) {
+            currentIntensity = clampedIntensity;
         }
-        remainingDuration = Math.max(remainingDuration, duration);
+        remainingDuration = Math.max(remainingDuration, clampedDuration);
     }
 
     @SubscribeEvent

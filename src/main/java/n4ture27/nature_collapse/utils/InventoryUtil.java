@@ -88,19 +88,25 @@ public final class InventoryUtil {
 
         public static FlowerConfig fromTag(CompoundTag tag) {
             if (tag == null) return createDefault();
+            float speedH = tag.contains(KEY_FLIGHT_SPEED_H) ? tag.getFloat(KEY_FLIGHT_SPEED_H) : 0.05f;
+            float speedV = tag.contains(KEY_FLIGHT_SPEED_V) ? tag.getFloat(KEY_FLIGHT_SPEED_V) : 0.05f;
+            double magR = tag.contains(KEY_MAGNET_RANGE) ? tag.getDouble(KEY_MAGNET_RANGE) : 8.0;
+            float speedM = tag.contains(KEY_SPEED_MULT) ? tag.getFloat(KEY_SPEED_MULT) : 1.5f;
+            double auraR = tag.contains(KEY_AURA_RANGE) ? tag.getDouble(KEY_AURA_RANGE) : 6.0;
+
             return new FlowerConfig(
                     tag.contains(KEY_FLIGHT_ENABLED) ? tag.getBoolean(KEY_FLIGHT_ENABLED) : true,
-                    tag.contains(KEY_FLIGHT_SPEED_H) ? tag.getFloat(KEY_FLIGHT_SPEED_H) : 0.05f,
-                    tag.contains(KEY_FLIGHT_SPEED_V) ? tag.getFloat(KEY_FLIGHT_SPEED_V) : 0.05f,
+                    Float.isFinite(speedH) ? Mth.clamp(speedH, 0.01f, 1.0f) : 0.05f,
+                    Float.isFinite(speedV) ? Mth.clamp(speedV, 0.01f, 1.0f) : 0.05f,
                     tag.contains(KEY_EFFECTS_ENABLED) ? tag.getBoolean(KEY_EFFECTS_ENABLED) : true,
                     tag.contains(KEY_INVUL_ENABLED) ? tag.getBoolean(KEY_INVUL_ENABLED) : true,
                     tag.contains(KEY_SATURATION_ENABLED) ? tag.getBoolean(KEY_SATURATION_ENABLED) : true,
                     tag.contains(KEY_MAGNET_ENABLED) ? tag.getBoolean(KEY_MAGNET_ENABLED) : false,
-                    tag.contains(KEY_MAGNET_RANGE) ? tag.getDouble(KEY_MAGNET_RANGE) : 8.0,
+                    Double.isFinite(magR) ? Mth.clamp(magR, 1.0, 64.0) : 8.0,
                     tag.contains(KEY_SPEED_ENABLED) ? tag.getBoolean(KEY_SPEED_ENABLED) : false,
-                    tag.contains(KEY_SPEED_MULT) ? tag.getFloat(KEY_SPEED_MULT) : 1.5f,
+                    Float.isFinite(speedM) ? Mth.clamp(speedM, 1.0f, 10.0f) : 1.5f,
                     tag.contains(KEY_AURA_ENABLED) ? tag.getBoolean(KEY_AURA_ENABLED) : false,
-                    tag.contains(KEY_AURA_RANGE) ? tag.getDouble(KEY_AURA_RANGE) : 6.0,
+                    Double.isFinite(auraR) ? Mth.clamp(auraR, 1.0, 32.0) : 6.0,
                     tag.contains(KEY_VISION_ENABLED) ? tag.getBoolean(KEY_VISION_ENABLED) : false
             );
         }

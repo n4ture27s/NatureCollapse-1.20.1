@@ -41,9 +41,12 @@ public class UpdateRangePacket {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
 
+            if (Double.isNaN(range) || Double.isInfinite(range) || range <= 0.0) return;
+            double validRange = net.minecraft.util.Mth.clamp(range, 1.0, Math.max(1.0, n4ture27.nature_collapse.Config.maxSwordRange));
+
             ItemStack stack = InventoryUtil.getStackFromSlot(player, slotId, isCurio, curiosIdentifier);
             if (!stack.isEmpty() && stack.getItem() instanceof NaturaLizeSword) {
-                InventoryUtil.setSwordRange(stack, range);
+                InventoryUtil.setSwordRange(stack, validRange);
             }
         });
         ctx.get().setPacketHandled(true);

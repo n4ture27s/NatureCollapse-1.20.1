@@ -93,7 +93,14 @@ public final class NaturalizeUtils {
     }
 
     private static final Set<UUID> PURGING_UUIDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private static final Set<UUID> NATURALIZED_UUIDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static final Set<UUID> NATURALIZED_UUIDS = Collections.newSetFromMap(
+            Collections.synchronizedMap(new java.util.LinkedHashMap<UUID, Boolean>(1000, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
+                    return size() > 10000;
+                }
+            })
+    );
     private static final Map<String, Set<Class<?>>> MOD_CLASS_CACHE = new ConcurrentHashMap<>();
 
     public static class PursuitTarget {

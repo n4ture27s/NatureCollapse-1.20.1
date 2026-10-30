@@ -1,6 +1,7 @@
 package n4ture27.nature_collapse.utils;
 
 import n4ture27.nature_collapse.NatureCollapse;
+import n4ture27.nature_collapse.compat.CuriosCompat;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -22,7 +23,7 @@ public final class CloverUtil {
                 return true;
             }
         }
-        return false;
+        return CuriosCompat.hasCurio(player, NatureCollapse.FourLeafClover.get());
     }
 
     /**
@@ -40,7 +41,7 @@ public final class CloverUtil {
                 return true;
             }
         }
-        return false;
+        return CuriosCompat.hasCurio(player, NatureCollapse.Clover.get());
     }
 
     /**
