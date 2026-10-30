@@ -61,6 +61,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
                         centerX - 130, panelTop + 60, 260, 20,
                         "Horizontal Speed: ", "",
                         0.02, 0.20, config.flightSpeedH(), 0.01,
+                        val -> String.format(java.util.Locale.ROOT, "%.2f (%.1fx)", val, val / 0.05),
                         val -> config = new InventoryUtil.FlowerConfig(
                                 config.flightEnabled(), val.floatValue(), config.flightSpeedV(),
                                 config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),
@@ -74,6 +75,7 @@ public class FlowerDetailScreen extends NatureBaseScreen {
                         centerX - 130, panelTop + 88, 260, 20,
                         "Vertical Speed: ", "",
                         0.02, 0.20, config.flightSpeedV(), 0.01,
+                        val -> String.format(java.util.Locale.ROOT, "%.2f (%.1fx)", val, val / 0.05),
                         val -> config = new InventoryUtil.FlowerConfig(
                                 config.flightEnabled(), config.flightSpeedH(), val.floatValue(),
                                 config.effectsEnabled(), config.invulEnabled(), config.saturationEnabled(),

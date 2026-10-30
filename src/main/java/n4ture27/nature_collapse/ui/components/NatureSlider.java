@@ -6,7 +6,9 @@ import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
+import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class NatureSlider extends AbstractSliderButton {
     private final String prefix;
@@ -14,18 +16,26 @@ public class NatureSlider extends AbstractSliderButton {
     private final double minValue;
     private final double maxValue;
     private final double step;
+    private final Function<Double, String> valueFormatter;
     private final Consumer<Double> onValueChanged;
 
     public NatureSlider(int x, int y, int width, int height, String prefix, String suffix,
                         double minValue, double maxValue, double currentValue, double step,
                         Consumer<Double> onValueChanged) {
+        this(x, y, width, height, prefix, suffix, minValue, maxValue, currentValue, step, null, onValueChanged);
+    }
+
+    public NatureSlider(int x, int y, int width, int height, String prefix, String suffix,
+                        double minValue, double maxValue, double currentValue, double step,
+                        Function<Double, String> valueFormatter, Consumer<Double> onValueChanged) {
         super(x, y, width, height, Component.empty(),
-                Mth.clamp((currentValue - minValue) / Math.max(1.0, maxValue - minValue), 0.0, 1.0));
+                Mth.clamp((currentValue - minValue) / Math.max(0.0001, maxValue - minValue), 0.0, 1.0));
         this.prefix = prefix;
         this.suffix = suffix;
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.step = step;
+        this.valueFormatter = valueFormatter;
         this.onValueChanged = onValueChanged;
         this.updateMessage();
     }
@@ -40,16 +50,23 @@ public class NatureSlider extends AbstractSliderButton {
 
     public void setActualValue(double newValue) {
         double clamped = Mth.clamp(newValue, minValue, maxValue);
-        this.value = Mth.clamp((clamped - minValue) / Math.max(1.0, maxValue - minValue), 0.0, 1.0);
+        this.value = Mth.clamp((clamped - minValue) / Math.max(0.0001, maxValue - minValue), 0.0, 1.0);
         this.updateMessage();
     }
 
     @Override
     protected void updateMessage() {
         double val = getActualValue();
-        String formatted = (step >= 1.0 && Math.floor(val) == val)
-                ? String.valueOf((int) val)
-                : String.format("%.1f", val);
+        String formatted;
+        if (this.valueFormatter != null) {
+            formatted = this.valueFormatter.apply(val);
+        } else if (step >= 1.0 && Math.floor(val) == val) {
+            formatted = String.valueOf((int) val);
+        } else if (step >= 0.1) {
+            formatted = String.format(Locale.ROOT, "%.1f", val);
+        } else {
+            formatted = String.format(Locale.ROOT, "%.2f", val);
+        }
         this.setMessage(Component.literal(prefix + formatted + suffix));
     }
 

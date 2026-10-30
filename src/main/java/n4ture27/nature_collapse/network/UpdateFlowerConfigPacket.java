@@ -46,6 +46,7 @@ public class UpdateFlowerConfigPacket {
             ItemStack targetStack = InventoryUtil.getStackFromSlot(player, msg.slotIndex, msg.isCurio, msg.curioIdentifier);
             if (!targetStack.isEmpty() && targetStack.getItem() instanceof NatureFlower) {
                 InventoryUtil.setFlowerConfig(targetStack, msg.config);
+                n4ture27.nature_collapse.EventHandler.updatePlayerMobilityDirect(player);
             }
         });
         ctx.get().setPacketHandled(true);

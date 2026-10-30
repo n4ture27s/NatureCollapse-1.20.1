@@ -1,6 +1,7 @@
 package n4ture27.nature_collapse.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import n4ture27.nature_collapse.Config;
 import n4ture27.nature_collapse.NatureCollapse;
 import n4ture27.nature_collapse.compat.CuriosCompat;
 import n4ture27.nature_collapse.item.NaturaLizeSword;
@@ -8,6 +9,7 @@ import n4ture27.nature_collapse.item.NatureFlower;
 import n4ture27.nature_collapse.ui.FlowerEffectSettingsScreen;
 import n4ture27.nature_collapse.ui.FlowerHubScreen;
 import n4ture27.nature_collapse.ui.RangeAdjustmentScreen;
+import n4ture27.nature_collapse.utils.InventoryUtil;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,10 +18,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -92,6 +96,32 @@ public class ClientTooltipHandler {
         } else if (stack.getItem() instanceof NatureFlower) {
             Minecraft.getInstance().setScreen(new FlowerHubScreen(stack, slotIndex, isCurio, identifier));
             ev.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClientPlayerTick(TickEvent.PlayerTickEvent ev) {
+        if (ev.phase != TickEvent.Phase.END || !ev.player.level().isClientSide()) return;
+        Player player = ev.player;
+        if (player != Minecraft.getInstance().player) return;
+        if (!(player instanceof net.minecraft.client.player.LocalPlayer localPlayer)) return;
+
+        if (!localPlayer.getAbilities().flying) return;
+
+        InventoryUtil.FlowerConfig cfg = InventoryUtil.getActiveFlowerConfig(localPlayer);
+        if (cfg == null || !cfg.flightEnabled() || !Config.flowerFlightEnabled) return;
+
+        float vSpeed = cfg.flightSpeedV();
+        float hSpeed = cfg.flightSpeedH();
+        if (localPlayer.input != null && Math.abs(vSpeed - hSpeed) > 0.001f) {
+            int dir = 0;
+            if (localPlayer.input.jumping) dir++;
+            if (localPlayer.input.shiftKeyDown) dir--;
+            if (dir != 0) {
+                double deltaY = (double) ((float) dir * (vSpeed - hSpeed) * 3.0f);
+                Vec3 movement = localPlayer.getDeltaMovement();
+                localPlayer.setDeltaMovement(movement.x, movement.y + deltaY, movement.z);
+            }
         }
     }
 

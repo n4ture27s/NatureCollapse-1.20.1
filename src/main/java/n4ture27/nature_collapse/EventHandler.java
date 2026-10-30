@@ -20,6 +20,9 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.Villager;
@@ -58,9 +61,75 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = NatureCollapse.ModId, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class EventHandler {
 
+    public static final java.util.UUID FLOWER_SPEED_MODIFIER_UUID = java.util.UUID.fromString("6a782b14-49c7-43cf-bf29-43c3f912e52a");
+    public static final String FLOWER_SPEED_MODIFIER_NAME = "nature_collapse:flower_speed";
+
     @Nullable
     public static InventoryUtil.FlowerConfig getActiveFlowerConfig(Player player) {
         return InventoryUtil.getActiveFlowerConfig(player);
+    }
+
+    public static void updatePlayerMobilityDirect(Player player) {
+        if (player == null || player.level().isClientSide()) return;
+        InventoryUtil.FlowerConfig cfg = getActiveFlowerConfig(player);
+        updatePlayerMobility(player, cfg);
+    }
+
+    private static void updatePlayerMobility(Player player, @Nullable InventoryUtil.FlowerConfig cfg) {
+        // 1. 移動速度 (Speed Boost) の適用 / 解除
+        AttributeInstance speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speedAttr != null) {
+            AttributeModifier existing = speedAttr.getModifier(FLOWER_SPEED_MODIFIER_UUID);
+            boolean speedActive = cfg != null && cfg.speedEnabled() && cfg.speedMult() > 1.0f;
+            if (speedActive) {
+                double desiredAmount = (double) (cfg.speedMult() - 1.0f);
+                if (existing == null || Math.abs(existing.getAmount() - desiredAmount) > 0.001) {
+                    if (existing != null) {
+                        speedAttr.removeModifier(FLOWER_SPEED_MODIFIER_UUID);
+                    }
+                    speedAttr.addTransientModifier(new AttributeModifier(
+                            FLOWER_SPEED_MODIFIER_UUID,
+                            FLOWER_SPEED_MODIFIER_NAME,
+                            desiredAmount,
+                            AttributeModifier.Operation.MULTIPLY_TOTAL
+                    ));
+                }
+            } else if (existing != null) {
+                speedAttr.removeModifier(FLOWER_SPEED_MODIFIER_UUID);
+            }
+        }
+
+        // 2. 飛行アビリティ & 飛行速度 (Flight & Flying Speed) の適用 / 解除
+        boolean shouldFly = cfg != null && cfg.flightEnabled() && Config.flowerFlightEnabled;
+        float targetSpeed = shouldFly ? cfg.flightSpeedH() : 0.05f;
+        boolean needsAbilityUpdate = false;
+
+        if (shouldFly) {
+            if (!player.getAbilities().mayfly) {
+                player.getAbilities().mayfly = true;
+                needsAbilityUpdate = true;
+            }
+            if (Math.abs(player.getAbilities().getFlyingSpeed() - targetSpeed) > 0.0001f) {
+                player.getAbilities().setFlyingSpeed(targetSpeed);
+                needsAbilityUpdate = true;
+            }
+        } else {
+            if (!player.isCreative() && !player.isSpectator()) {
+                if (player.getAbilities().mayfly) {
+                    player.getAbilities().mayfly = false;
+                    player.getAbilities().flying = false;
+                    needsAbilityUpdate = true;
+                }
+            }
+            if (Math.abs(player.getAbilities().getFlyingSpeed() - 0.05f) > 0.0001f) {
+                player.getAbilities().setFlyingSpeed(0.05f);
+                needsAbilityUpdate = true;
+            }
+        }
+
+        if (needsAbilityUpdate) {
+            player.onUpdateAbilities();
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -229,14 +298,8 @@ public class EventHandler {
             }
         }
 
-        // 3. 飛行制御・速度適用
-        if (cfg.flightEnabled() && Config.flowerFlightEnabled) {
-            if (!player.getAbilities().mayfly) {
-                player.getAbilities().mayfly = true;
-                player.onUpdateAbilities();
-            }
-            player.getAbilities().setFlyingSpeed(cfg.flightSpeedH());
-        }
+        // 3. 移動能力（速度・飛行）の適用
+        updatePlayerMobility(player, cfg);
 
         // 4. 磁石（ドロップアイテム＆経験値吸引）
         if (cfg.magnetEnabled()) {
@@ -329,18 +392,7 @@ public class EventHandler {
         Player player = ev.player;
         if (ev.phase == TickEvent.Phase.END && !player.level().isClientSide()) {
             InventoryUtil.FlowerConfig cfg = getActiveFlowerConfig(player);
-            boolean shouldFly = cfg != null && cfg.flightEnabled() && Config.flowerFlightEnabled;
-
-            if (shouldFly) {
-                if (!player.getAbilities().mayfly) {
-                    player.getAbilities().mayfly = true;
-                    player.onUpdateAbilities();
-                }
-            } else if (!player.isCreative() && !player.isSpectator() && player.getAbilities().mayfly) {
-                player.getAbilities().mayfly = false;
-                player.getAbilities().flying = false;
-                player.onUpdateAbilities();
-            }
+            updatePlayerMobility(player, cfg);
         }
     }
 
