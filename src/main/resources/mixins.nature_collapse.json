@@ -18,7 +18,6 @@
 		"PlayerListMixin",
 		"PlayerMixin",
 		"ServerGamePacketListenerImplMixin",
-		"ServerLevelAccessor",
 		"ServerPlayerMixin",
 		"SynchedEntityDataMixin"
 	],
