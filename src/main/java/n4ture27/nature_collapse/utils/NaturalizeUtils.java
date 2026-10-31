@@ -3,6 +3,7 @@ package n4ture27.nature_collapse.utils;
 import n4ture27.nature_collapse.compat.CuriosCompat;
 import n4ture27.nature_collapse.mixin.EntityAccessor;
 import n4ture27.nature_collapse.mixin.LivingEntityAccessor;
+import n4ture27.nature_collapse.mixin.ServerLevelAccessor;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
@@ -605,37 +606,6 @@ public final class NaturalizeUtils {
         }
     }
 
-    private static Field SERVER_LEVEL_TICK_LIST_FIELD;
-    private static Field SERVER_LEVEL_ENTITY_MANAGER_FIELD;
-    private static boolean SERVER_LEVEL_FIELDS_SEARCHED = false;
-
-    private static synchronized Field getServerLevelTickListField() {
-        if (!SERVER_LEVEL_FIELDS_SEARCHED) {
-            initServerLevelReflectionFields();
-        }
-        return SERVER_LEVEL_TICK_LIST_FIELD;
-    }
-
-    private static synchronized Field getServerLevelEntityManagerField() {
-        if (!SERVER_LEVEL_FIELDS_SEARCHED) {
-            initServerLevelReflectionFields();
-        }
-        return SERVER_LEVEL_ENTITY_MANAGER_FIELD;
-    }
-
-    private static void initServerLevelReflectionFields() {
-        SERVER_LEVEL_FIELDS_SEARCHED = true;
-        for (Field f : ServerLevel.class.getDeclaredFields()) {
-            if (EntityTickList.class.isAssignableFrom(f.getType())) {
-                f.setAccessible(true);
-                SERVER_LEVEL_TICK_LIST_FIELD = f;
-            } else if (PersistentEntitySectionManager.class.isAssignableFrom(f.getType())) {
-                f.setAccessible(true);
-                SERVER_LEVEL_ENTITY_MANAGER_FIELD = f;
-            }
-        }
-    }
-
     public static void removeDirectFromLevel(Entity entity, ServerLevel serverLevel) {
         if (entity == null || serverLevel == null) {
             return;
@@ -651,9 +621,8 @@ public final class NaturalizeUtils {
 
         // 6.2. EntityTickList の内部 FastUtil Map から直接除去（EntityTickListMixin による cancel を迂回）
         try {
-            Field tickListField = getServerLevelTickListField();
-            if (tickListField != null) {
-                EntityTickList tickList = (EntityTickList) tickListField.get(serverLevel);
+            if (serverLevel instanceof ServerLevelAccessor accessor) {
+                EntityTickList tickList = accessor.getEntityTickList();
                 if (tickList != null) {
                     removeDirectlyFromTickList(tickList, entity);
                 }
@@ -663,10 +632,8 @@ public final class NaturalizeUtils {
 
         // 6.3. PersistentEntitySectionManager の内部データ構造（EntityLookup, Section, knownUuids）から直接抹消
         try {
-            Field entityManagerField = getServerLevelEntityManagerField();
-            if (entityManagerField != null) {
-                @SuppressWarnings("unchecked")
-                PersistentEntitySectionManager<Entity> em = (PersistentEntitySectionManager<Entity>) entityManagerField.get(serverLevel);
+            if (serverLevel instanceof ServerLevelAccessor accessor) {
+                PersistentEntitySectionManager<Entity> em = accessor.getEntityManager();
                 if (em != null) {
                     purgeFromEntityManagerDirect(em, entity, uuid);
                 }
