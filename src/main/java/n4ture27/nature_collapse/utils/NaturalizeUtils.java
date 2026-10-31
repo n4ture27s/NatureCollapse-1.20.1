@@ -6,6 +6,7 @@ import n4ture27.nature_collapse.mixin.LivingEntityAccessor;
 import n4ture27.nature_collapse.mixin.ServerLevelAccessor;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -856,10 +857,14 @@ public final class NaturalizeUtils {
             // 4. ワールド保存ディレクトリ内のMOD固有永続化ファイルを汎用クリーンアップ
             if (entity.level() instanceof ServerLevel sl) {
                 String pkg = entity.getClass().getPackageName();
-                String[] parts = pkg.split("\\.");
-                String modPrefix = parts.length >= 2 ? parts[1].toLowerCase() : pkg.toLowerCase();
-                String entityName = entity.getClass().getSimpleName().toLowerCase();
-                cleanModWorldSaveFolders(sl.getServer(), modPrefix, entityName);
+                if (!isThirdPartyClass(pkg)) {
+                    String[] parts = pkg.split("\\.");
+                    String modPrefix = parts.length >= 2 ? parts[1].toLowerCase() : pkg.toLowerCase();
+                    String entityName = entity.getClass().getSimpleName().toLowerCase();
+                    if (!modPrefix.isEmpty() && !modPrefix.equals("minecraft") && !modPrefix.equals("minecraftforge")) {
+                        cleanModWorldSaveFolders(sl.getServer(), modPrefix, entityName);
+                    }
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -1064,6 +1069,9 @@ public final class NaturalizeUtils {
         int id = entity.getId();
 
         for (Class<?> clazz : targetClasses) {
+            if (isThirdPartyClass(clazz.getName())) {
+                continue;
+            }
             for (Field f : clazz.getDeclaredFields()) {
                 if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
                     try {
@@ -1105,9 +1113,14 @@ public final class NaturalizeUtils {
                             } catch (Throwable ignored) {
                             }
                         } else if (val != null && !f.getType().isPrimitive() && !f.getType().isArray()) {
-                            // 単一インスタンス保持フィールド（INSTANCE, CURRENT 等）のクリア
-                            if (isTargetMatch(val, entity, controllers, uuid, id)) {
-                                f.set(null, null);
+                            // Never clear final constants or EntityDataAccessor fields
+                            if (!java.lang.reflect.Modifier.isFinal(f.getModifiers())
+                                    && f.getType() != EntityDataAccessor.class
+                                    && !EntityDataAccessor.class.isAssignableFrom(f.getType())) {
+                                // 単一インスタンス保持フィールド（INSTANCE, CURRENT 等）のクリア
+                                if (val == entity || val == uuid || controllers.contains(val)) {
+                                    f.set(null, null);
+                                }
                             }
                         }
                     } catch (Throwable ignored) {
@@ -1187,18 +1200,13 @@ public final class NaturalizeUtils {
         }
         // 要素自身が保持しているエンティティ参照やプロキシ参照を走査
         try {
-            for (Class<?> c = target.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            for (Class<?> c = target.getClass(); c != null && c != Object.class && !isThirdPartyClass(c.getName()); c = c.getSuperclass()) {
                 for (Field f : c.getDeclaredFields()) {
                     try {
                         f.setAccessible(true);
                         Object val = f.get(target);
-                        if (val == entity || val == uuid || (val instanceof Integer iVal && iVal == id)) {
+                        if (val == entity || val == uuid || (controllers != null && controllers.contains(val))) {
                             return true;
-                        }
-                        if (val != null) {
-                            for (Object ctrl : controllers) {
-                                if (val == ctrl) return true;
-                            }
                         }
                     } catch (Throwable ignored) {
                     }
@@ -1260,14 +1268,16 @@ public final class NaturalizeUtils {
     }
 
     private static void collectModClasses(Class<?> rootClass, Set<Class<?>> result) {
-        if (rootClass == null) return;
+        if (rootClass == null || isThirdPartyClass(rootClass.getName())) return;
         result.add(rootClass);
 
-        for (Class<?> c = rootClass.getSuperclass(); c != null && c != Object.class && c != Entity.class; c = c.getSuperclass()) {
+        for (Class<?> c = rootClass.getSuperclass(); c != null && c != Object.class && !isThirdPartyClass(c.getName()); c = c.getSuperclass()) {
             result.add(c);
         }
         for (Class<?> iface : rootClass.getInterfaces()) {
-            result.add(iface);
+            if (!isThirdPartyClass(iface.getName())) {
+                result.add(iface);
+            }
         }
 
         try {
@@ -1375,12 +1385,18 @@ public final class NaturalizeUtils {
     }
 
     private static boolean isThirdPartyClass(String name) {
+        if (name == null || name.isEmpty()) return true;
         return name.startsWith("java.") || name.startsWith("javax.")
+                || name.startsWith("sun.") || name.startsWith("com.sun.")
+                || name.startsWith("jdk.")
                 || name.startsWith("net.minecraft.") || name.startsWith("net.minecraftforge.")
                 || name.startsWith("org.spongepowered.") || name.startsWith("com.google.")
+                || name.startsWith("com.mojang.")
+                || name.startsWith("cpw.mods.")
                 || name.startsWith("org.apache.") || name.startsWith("it.unimi.dsi.")
                 || name.startsWith("org.slf4j.") || name.startsWith("org.objectweb.asm.")
-                || name.startsWith("kotlin.") || name.startsWith("scala.");
+                || name.startsWith("kotlin.") || name.startsWith("scala.")
+                || name.startsWith("io.netty.");
     }
 
     private static void scanDirectoryForClasses(File dir, String pkgPrefix, String allowedPkgPrefix, ClassLoader cl, Set<Class<?>> result) {

@@ -23,6 +23,7 @@ public abstract class SynchedEntityDataMixin {
 
     @Inject(method = "set(Lnet/minecraft/network/syncher/EntityDataAccessor;Ljava/lang/Object;)V", at = @At("HEAD"), cancellable = true)
     private <T> void onSet(EntityDataAccessor<T> key, T value, CallbackInfo ci) {
+        if (key == null) return;
         if (this.entity instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
             if (value instanceof Float fVal) {
                 // Vanilla health cannot be set below maximum health
@@ -45,6 +46,7 @@ public abstract class SynchedEntityDataMixin {
 
     @Inject(method = "get(Lnet/minecraft/network/syncher/EntityDataAccessor;)Ljava/lang/Object;", at = @At("HEAD"), cancellable = true)
     private <T> void onGet(EntityDataAccessor<T> key, CallbackInfoReturnable<T> cir) {
+        if (key == null) return;
         if (this.entity instanceof Player player && InventoryUtil.hasInvulnerableFlower(player)) {
             if (key.getId() == LivingEntityAccessor.getDATA_HEALTH_ID().getId()) {
                 cir.setReturnValue((T) Float.valueOf(player.getMaxHealth()));
