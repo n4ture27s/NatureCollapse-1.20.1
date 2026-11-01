@@ -6,6 +6,11 @@ import n4ture27.nature_collapse.compat.CuriosCompat;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -14,6 +19,22 @@ import java.util.function.Consumer;
 
 public final class InventoryUtil {
     public static final String TAG_CUSTOM_RANGE = "CustomRange";
+    public static final String TAG_TARGET_MONSTERS = "TargetMonsters";
+    public static final String TAG_TARGET_PASSIVE = "TargetPassive";
+    public static final String TAG_TARGET_PLAYERS = "TargetPlayers";
+    public static final String TAG_TARGET_ITEMS_XP = "TargetItemsXP";
+    public static final String TAG_TARGET_NON_LIVING = "TargetNonLiving";
+
+    public record SwordTargetFilter(
+            boolean targetMonsters,
+            boolean targetPassive,
+            boolean targetPlayers,
+            boolean targetItemsAndXP,
+            boolean targetNonLiving
+    ) {
+        public static final SwordTargetFilter DEFAULT = new SwordTargetFilter(true, true, true, false, false);
+    }
+
     public static final String TAG_SELECTED_EFFECTS = "SelectedEffects";
     public static final String TAG_EFFECT_ID = "Id";
     public static final String TAG_EFFECT_LEVEL = "Level";
@@ -191,6 +212,61 @@ public final class InventoryUtil {
                 ? Mth.clamp(range, 1.0, Config.maxSwordRange)
                 : Config.defaultSwordRange;
         stack.getOrCreateTag().putDouble(TAG_CUSTOM_RANGE, clamped);
+    }
+
+    public static SwordTargetFilter getSwordTargetFilter(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return SwordTargetFilter.DEFAULT;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag == null) {
+            return SwordTargetFilter.DEFAULT;
+        }
+        boolean monsters = !tag.contains(TAG_TARGET_MONSTERS) || tag.getBoolean(TAG_TARGET_MONSTERS);
+        boolean passive = !tag.contains(TAG_TARGET_PASSIVE) || tag.getBoolean(TAG_TARGET_PASSIVE);
+        boolean players = !tag.contains(TAG_TARGET_PLAYERS) || tag.getBoolean(TAG_TARGET_PLAYERS);
+        boolean itemsXp = tag.contains(TAG_TARGET_ITEMS_XP) && tag.getBoolean(TAG_TARGET_ITEMS_XP);
+        boolean nonLiving = tag.contains(TAG_TARGET_NON_LIVING) && tag.getBoolean(TAG_TARGET_NON_LIVING);
+        return new SwordTargetFilter(monsters, passive, players, itemsXp, nonLiving);
+    }
+
+    public static void setSwordTargetFilter(ItemStack stack, SwordTargetFilter filter) {
+        if (stack == null || stack.isEmpty() || filter == null) return;
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putBoolean(TAG_TARGET_MONSTERS, filter.targetMonsters());
+        tag.putBoolean(TAG_TARGET_PASSIVE, filter.targetPassive());
+        tag.putBoolean(TAG_TARGET_PLAYERS, filter.targetPlayers());
+        tag.putBoolean(TAG_TARGET_ITEMS_XP, filter.targetItemsAndXP());
+        tag.putBoolean(TAG_TARGET_NON_LIVING, filter.targetNonLiving());
+    }
+
+    public static boolean isSwordTargetAllowed(ItemStack sword, Entity target) {
+        if (target == null) return false;
+
+        // Players holding Immutable Flower are strictly invulnerable and protected
+        if (target instanceof Player player && hasFlower(player)) {
+            return false;
+        }
+
+        SwordTargetFilter filter = getSwordTargetFilter(sword);
+
+        if (target instanceof ItemEntity || target instanceof ExperienceOrb) {
+            return filter.targetItemsAndXP();
+        }
+
+        if (target instanceof Player) {
+            return filter.targetPlayers();
+        }
+
+        if (target instanceof Enemy) {
+            return filter.targetMonsters();
+        }
+
+        if (target instanceof LivingEntity) {
+            return filter.targetPassive();
+        }
+
+        return filter.targetNonLiving();
     }
 
     public static ItemStack getStackFromSlot(Player player, int slotIndex, boolean isCurio, String curioIdentifier) {

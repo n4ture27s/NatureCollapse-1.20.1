@@ -14,8 +14,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
 public class RangeAdjustmentScreen extends NatureBaseScreen {
-    private static final int PANEL_WIDTH = 320;
-    private static final int PANEL_HEIGHT = 190;
+    private static final int PANEL_WIDTH = 340;
+    private static final int PANEL_HEIGHT = 245;
 
     private final ItemStack stack;
     private final int slotId;
@@ -26,6 +26,18 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
     private NatureSlider slider;
     private EditBox numberBox;
     private boolean isUpdatingFromBox = false;
+
+    private boolean targetMonsters;
+    private boolean targetPassive;
+    private boolean targetPlayers;
+    private boolean targetItemsAndXP;
+    private boolean targetNonLiving;
+
+    private NatureButton btnMonsters;
+    private NatureButton btnPassive;
+    private NatureButton btnPlayers;
+    private NatureButton btnItemsXP;
+    private NatureButton btnNonLiving;
 
     public RangeAdjustmentScreen(ItemStack stack, int slotId, boolean isCurio, String curiosIdentifier) {
         super(Component.translatable("gui.nature_collapse.range_settings")
@@ -39,6 +51,12 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
 
     private void loadSettings() {
         this.range = InventoryUtil.getSwordRange(stack);
+        InventoryUtil.SwordTargetFilter filter = InventoryUtil.getSwordTargetFilter(stack);
+        this.targetMonsters = filter.targetMonsters();
+        this.targetPassive = filter.targetPassive();
+        this.targetPlayers = filter.targetPlayers();
+        this.targetItemsAndXP = filter.targetItemsAndXP();
+        this.targetNonLiving = filter.targetNonLiving();
     }
 
     @Override
@@ -49,11 +67,11 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
         int panelTop = this.height / 2 - PANEL_HEIGHT / 2;
         double maxRange = Math.max(1.0, Config.maxSwordRange);
 
-        // スライダー（幅 210）
+        // 1. スライダー (幅 210)
         this.slider = new NatureSlider(
-                centerX - 140,
-                panelTop + 56,
-                210,
+                centerX - 150,
+                panelTop + 40,
+                220,
                 20,
                 "Range: ",
                 " blocks",
@@ -70,12 +88,12 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
         );
         this.addRenderableWidget(slider);
 
-        // 数値直接入力ボックス（幅 60）
+        // 2. 数値直接入力ボックス (幅 60)
         this.numberBox = new EditBox(
                 this.font,
-                centerX + 80,
-                panelTop + 56,
-                60,
+                centerX + 85,
+                panelTop + 40,
+                65,
                 20,
                 Component.literal("Value")
         );
@@ -96,43 +114,106 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
         });
         this.addRenderableWidget(numberBox);
 
-        // クイックプリセットボタン (横並び4つ)
-        int presetY = panelTop + 86;
-        int btnW = 68;
+        // 3. クイックプリセットボタン (横並び4つ)
+        int presetY = panelTop + 66;
+        int btnW = 70;
         int gap = 6;
         int startX = centerX - (btnW * 4 + gap * 3) / 2;
 
         this.addRenderableWidget(new NatureButton(
-                startX, presetY, btnW, 20,
+                startX, presetY, btnW, 18,
                 Component.literal("10m (Def)"),
                 btn -> applyPreset(Config.defaultSwordRange)
         ));
 
         this.addRenderableWidget(new NatureButton(
-                startX + (btnW + gap), presetY, btnW, 20,
+                startX + (btnW + gap), presetY, btnW, 18,
                 Component.literal("25m"),
                 btn -> applyPreset(25.0)
         ));
 
         this.addRenderableWidget(new NatureButton(
-                startX + (btnW + gap) * 2, presetY, btnW, 20,
+                startX + (btnW + gap) * 2, presetY, btnW, 18,
                 Component.literal("50m"),
                 btn -> applyPreset(50.0)
         ));
 
         this.addRenderableWidget(new NatureButton(
-                startX + (btnW + gap) * 3, presetY, btnW, 20,
+                startX + (btnW + gap) * 3, presetY, btnW, 18,
                 Component.literal("Max (" + (int) maxRange + ")"),
                 btn -> applyPreset(maxRange),
                 true
         ));
 
-        // 最下部アクションボタン (Reset, Done)
+        // 4. ターゲットフィルターボタン (Row 1: 3ボタン)
+        int filterRow1Y = panelTop + 108;
+        int fBtnW1 = 96;
+        int fGap = 6;
+        int fStartX1 = centerX - (fBtnW1 * 3 + fGap * 2) / 2;
+
+        this.btnMonsters = new NatureButton(
+                fStartX1, filterRow1Y, fBtnW1, 20,
+                getFilterComponent("Monsters", targetMonsters),
+                btn -> {
+                    targetMonsters = !targetMonsters;
+                    updateFilterButtonLabels();
+                }
+        );
+        this.addRenderableWidget(btnMonsters);
+
+        this.btnPassive = new NatureButton(
+                fStartX1 + (fBtnW1 + fGap), filterRow1Y, fBtnW1, 20,
+                getFilterComponent("Passive", targetPassive),
+                btn -> {
+                    targetPassive = !targetPassive;
+                    updateFilterButtonLabels();
+                }
+        );
+        this.addRenderableWidget(btnPassive);
+
+        this.btnPlayers = new NatureButton(
+                fStartX1 + (fBtnW1 + fGap) * 2, filterRow1Y, fBtnW1, 20,
+                getFilterComponent("Players", targetPlayers),
+                btn -> {
+                    targetPlayers = !targetPlayers;
+                    updateFilterButtonLabels();
+                }
+        );
+        this.addRenderableWidget(btnPlayers);
+
+        // 5. ターゲットフィルターボタン (Row 2: 2ボタン)
+        int filterRow2Y = panelTop + 132;
+        int fBtnW2 = 147;
+        int fStartX2 = centerX - (fBtnW2 * 2 + fGap) / 2;
+
+        this.btnItemsXP = new NatureButton(
+                fStartX2, filterRow2Y, fBtnW2, 20,
+                getFilterComponent("Items & XP", targetItemsAndXP),
+                btn -> {
+                    targetItemsAndXP = !targetItemsAndXP;
+                    updateFilterButtonLabels();
+                }
+        );
+        this.addRenderableWidget(btnItemsXP);
+
+        this.btnNonLiving = new NatureButton(
+                fStartX2 + fBtnW2 + fGap, filterRow2Y, fBtnW2, 20,
+                getFilterComponent("Misc Objects", targetNonLiving),
+                btn -> {
+                    targetNonLiving = !targetNonLiving;
+                    updateFilterButtonLabels();
+                }
+        );
+        this.addRenderableWidget(btnNonLiving);
+
+        updateFilterButtonLabels();
+
+        // 6. 最下部アクションボタン (Reset, Done)
         int actionY = panelTop + PANEL_HEIGHT - 32;
         this.addRenderableWidget(new NatureButton(
                 centerX - 130, actionY, 120, 22,
                 Component.literal("Reset to Default"),
-                btn -> applyPreset(Config.defaultSwordRange)
+                btn -> resetToDefault()
         ));
 
         this.addRenderableWidget(new NatureButton(
@@ -141,6 +222,21 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
                 btn -> this.onClose(),
                 true
         ));
+    }
+
+    private void updateFilterButtonLabels() {
+        if (btnMonsters != null) btnMonsters.setMessage(getFilterComponent("Monsters", targetMonsters));
+        if (btnPassive != null) btnPassive.setMessage(getFilterComponent("Passive", targetPassive));
+        if (btnPlayers != null) btnPlayers.setMessage(getFilterComponent("Players", targetPlayers));
+        if (btnItemsXP != null) btnItemsXP.setMessage(getFilterComponent("Items & XP", targetItemsAndXP));
+        if (btnNonLiving != null) btnNonLiving.setMessage(getFilterComponent("Misc Objects", targetNonLiving));
+    }
+
+    private Component getFilterComponent(String name, boolean enabled) {
+        return Component.literal(name + ": ")
+                .withStyle(ChatFormatting.WHITE)
+                .append(Component.literal(enabled ? "ON" : "OFF")
+                        .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
     }
 
     private void applyPreset(double val) {
@@ -154,6 +250,16 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
         }
     }
 
+    private void resetToDefault() {
+        applyPreset(Config.defaultSwordRange);
+        this.targetMonsters = InventoryUtil.SwordTargetFilter.DEFAULT.targetMonsters();
+        this.targetPassive = InventoryUtil.SwordTargetFilter.DEFAULT.targetPassive();
+        this.targetPlayers = InventoryUtil.SwordTargetFilter.DEFAULT.targetPlayers();
+        this.targetItemsAndXP = InventoryUtil.SwordTargetFilter.DEFAULT.targetItemsAndXP();
+        this.targetNonLiving = InventoryUtil.SwordTargetFilter.DEFAULT.targetNonLiving();
+        updateFilterButtonLabels();
+    }
+
     @Override
     public void onClose() {
         this.saveSettings();
@@ -162,7 +268,13 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
 
     private void saveSettings() {
         InventoryUtil.setSwordRange(stack, range);
-        NatureCollapse.CHANNEL.sendToServer(new UpdateRangePacket(range, slotId, isCurio, curiosIdentifier));
+        InventoryUtil.setSwordTargetFilter(stack, new InventoryUtil.SwordTargetFilter(
+                targetMonsters, targetPassive, targetPlayers, targetItemsAndXP, targetNonLiving
+        ));
+        NatureCollapse.CHANNEL.sendToServer(new UpdateRangePacket(
+                range, slotId, isCurio, curiosIdentifier,
+                targetMonsters, targetPassive, targetPlayers, targetItemsAndXP, targetNonLiving
+        ));
     }
 
     @Override
@@ -174,14 +286,17 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
         // サイバー・フロストガラスパネル
         this.renderGlassPanel(gui, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT);
 
-        // タイトルと剣アイコン（横スライド・回転なしでタイトルの横に固定配置）
+        // タイトルと剣アイコン
         int titleWidth = this.font.width(this.title);
         int totalHeaderWidth = 20 + titleWidth;
         int headerStartX = centerX - totalHeaderWidth / 2;
-        int headerY = panelTop + 20;
+        int headerY = panelTop + 16;
 
         gui.renderItem(this.stack, headerStartX, headerY - 4);
         gui.drawString(this.font, this.title, headerStartX + 20, headerY, 0x55FFAA, true);
+
+        // ターゲットフィルターのセクションラベル
+        gui.drawCenteredString(this.font, Component.translatable("gui.nature_collapse.target_filtering").withStyle(ChatFormatting.AQUA), centerX, panelTop + 94, 0x55FFFF);
 
         // 現在の射程ステータスバー表示
         String modeText;
@@ -196,7 +311,7 @@ public class RangeAdjustmentScreen extends NatureBaseScreen {
             modeText = "Mode: Long Range / Dimensional Snipe";
             modeColor = 0x55FFFF;
         }
-        gui.drawCenteredString(this.font, modeText, centerX, panelTop + 118, modeColor);
+        gui.drawCenteredString(this.font, modeText, centerX, panelTop + 164, modeColor);
     }
 
     @Override

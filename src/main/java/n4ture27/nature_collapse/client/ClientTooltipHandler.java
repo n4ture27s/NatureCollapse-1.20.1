@@ -20,6 +20,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -57,6 +58,37 @@ public class ClientTooltipHandler {
     }
 
     @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        if (Minecraft.getInstance().screen != null) return;
+        if (OPEN_RANGE_GUI.consumeClick()) {
+            Player localPlayer = Minecraft.getInstance().player;
+            if (localPlayer == null) return;
+
+            // 1. Curios スロットに不変の花がある場合、最優先で開く
+            CuriosCompat.CurioFound found = CuriosCompat.findFirstCurio(localPlayer, NatureCollapse.NatureFlower.get());
+            if (found != null) {
+                Minecraft.getInstance().setScreen(new FlowerHubScreen(found.stack(), found.slotIndex(), true, found.identifier()));
+                return;
+            }
+
+            // 2. 通常インベントリ内に不変の花があれば開く
+            for (int i = 0; i < localPlayer.getInventory().getContainerSize(); i++) {
+                ItemStack stack = localPlayer.getInventory().getItem(i);
+                if (stack.getItem() instanceof NatureFlower) {
+                    Minecraft.getInstance().setScreen(new FlowerHubScreen(stack, i, false, ""));
+                    return;
+                }
+            }
+
+            // 3. 手持ちに剣があれば剣の設定を開く
+            ItemStack mainHand = localPlayer.getMainHandItem();
+            if (mainHand.getItem() instanceof NaturaLizeSword) {
+                Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(mainHand, localPlayer.getInventory().selected, false, ""));
+            }
+        }
+    }
+
+    @SubscribeEvent
     public static void onScreenKey(ScreenEvent.KeyPressed.Pre ev) {
         if (!(ev.getScreen() instanceof AbstractContainerScreen<?> container)) {
             return;
@@ -65,36 +97,45 @@ public class ClientTooltipHandler {
             return;
         }
 
-        Slot slot = container.getSlotUnderMouse();
-        if (slot == null || slot.getItem().isEmpty()) {
-            return;
-        }
-
         Player localPlayer = Minecraft.getInstance().player;
         if (localPlayer == null) {
             return;
         }
 
-        boolean isCurio = false;
-        String identifier = "";
-        int slotIndex = slot.getContainerSlot();
+        Slot slot = container.getSlotUnderMouse();
+        if (slot != null && !slot.getItem().isEmpty()) {
+            boolean isCurio = false;
+            String identifier = "";
+            int slotIndex = slot.getContainerSlot();
 
-        CuriosCompat.CurioSlotInfo curioSlotInfo = CuriosCompat.getSlotInfo(slot);
-        if (curioSlotInfo != null) {
-            isCurio = true;
-            identifier = curioSlotInfo.identifier();
-            slotIndex = curioSlotInfo.slotIndex();
-        } else if (slot.container != localPlayer.getInventory()) {
-            // Ignore slots belonging to external containers (chests, etc.) so we don't overwrite player inventory slots
-            return;
+            CuriosCompat.CurioSlotInfo curioSlotInfo = CuriosCompat.getSlotInfo(slot);
+            if (curioSlotInfo != null) {
+                isCurio = true;
+                identifier = curioSlotInfo.identifier();
+                slotIndex = curioSlotInfo.slotIndex();
+            } else if (slot.container != localPlayer.getInventory()) {
+                // Ignore slots belonging to external containers (chests, etc.)
+                slot = null;
+            }
+
+            if (slot != null) {
+                ItemStack stack = slot.getItem();
+                if (stack.getItem() instanceof NaturaLizeSword) {
+                    Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(stack, slotIndex, isCurio, identifier));
+                    ev.setCanceled(true);
+                    return;
+                } else if (stack.getItem() instanceof NatureFlower) {
+                    Minecraft.getInstance().setScreen(new FlowerHubScreen(stack, slotIndex, isCurio, identifier));
+                    ev.setCanceled(true);
+                    return;
+                }
+            }
         }
 
-        ItemStack stack = slot.getItem();
-        if (stack.getItem() instanceof NaturaLizeSword) {
-            Minecraft.getInstance().setScreen(new RangeAdjustmentScreen(stack, slotIndex, isCurio, identifier));
-            ev.setCanceled(true);
-        } else if (stack.getItem() instanceof NatureFlower) {
-            Minecraft.getInstance().setScreen(new FlowerHubScreen(stack, slotIndex, isCurio, identifier));
+        // カーソルを合わせていない場合でも、Curios スロットに不変の花があれば開く
+        CuriosCompat.CurioFound found = CuriosCompat.findFirstCurio(localPlayer, NatureCollapse.NatureFlower.get());
+        if (found != null) {
+            Minecraft.getInstance().setScreen(new FlowerHubScreen(found.stack(), found.slotIndex(), true, found.identifier()));
             ev.setCanceled(true);
         }
     }

@@ -14,12 +14,24 @@ public class UpdateRangePacket {
     private final int slotId;
     private final boolean isCurio;
     private final String curiosIdentifier;
+    private final boolean targetMonsters;
+    private final boolean targetPassive;
+    private final boolean targetPlayers;
+    private final boolean targetItemsAndXP;
+    private final boolean targetNonLiving;
 
-    public UpdateRangePacket(double range, int slotId, boolean isCurio, String curiosIdentifier) {
+    public UpdateRangePacket(double range, int slotId, boolean isCurio, String curiosIdentifier,
+                             boolean targetMonsters, boolean targetPassive, boolean targetPlayers,
+                             boolean targetItemsAndXP, boolean targetNonLiving) {
         this.range = range;
         this.slotId = slotId;
         this.isCurio = isCurio;
         this.curiosIdentifier = curiosIdentifier != null ? curiosIdentifier : "";
+        this.targetMonsters = targetMonsters;
+        this.targetPassive = targetPassive;
+        this.targetPlayers = targetPlayers;
+        this.targetItemsAndXP = targetItemsAndXP;
+        this.targetNonLiving = targetNonLiving;
     }
 
     public UpdateRangePacket(FriendlyByteBuf buf) {
@@ -27,6 +39,11 @@ public class UpdateRangePacket {
         this.slotId = buf.readInt();
         this.isCurio = buf.readBoolean();
         this.curiosIdentifier = buf.readUtf(64);
+        this.targetMonsters = buf.readBoolean();
+        this.targetPassive = buf.readBoolean();
+        this.targetPlayers = buf.readBoolean();
+        this.targetItemsAndXP = buf.readBoolean();
+        this.targetNonLiving = buf.readBoolean();
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -34,6 +51,11 @@ public class UpdateRangePacket {
         buf.writeInt(slotId);
         buf.writeBoolean(isCurio);
         buf.writeUtf(curiosIdentifier, 64);
+        buf.writeBoolean(targetMonsters);
+        buf.writeBoolean(targetPassive);
+        buf.writeBoolean(targetPlayers);
+        buf.writeBoolean(targetItemsAndXP);
+        buf.writeBoolean(targetNonLiving);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
@@ -47,6 +69,9 @@ public class UpdateRangePacket {
             ItemStack stack = InventoryUtil.getStackFromSlot(player, slotId, isCurio, curiosIdentifier);
             if (!stack.isEmpty() && stack.getItem() instanceof NaturaLizeSword) {
                 InventoryUtil.setSwordRange(stack, validRange);
+                InventoryUtil.setSwordTargetFilter(stack, new InventoryUtil.SwordTargetFilter(
+                        targetMonsters, targetPassive, targetPlayers, targetItemsAndXP, targetNonLiving
+                ));
             }
         });
         ctx.get().setPacketHandled(true);

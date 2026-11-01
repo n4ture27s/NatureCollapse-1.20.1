@@ -4,7 +4,8 @@
 	"key.categories.nature_collapse": "自然の崩壊 (Nature Collapse)",
 	"key.nature_collapse.open_range_gui": "アイテム設定GUIを開く",
 
-	"gui.nature_collapse.range_settings": "射程設定 - 帰化の剣",
+	"gui.nature_collapse.range_settings": "射程・対象フィルター設定 - 帰化の剣",
+	"gui.nature_collapse.target_filtering": "対象エンティティ フィルター設定",
 	"gui.nature_collapse.flower_settings": "エフェクト制御マトリクス - 不変の花",
 	"gui.nature_collapse.search_effect": "エフェクトを検索...",
 

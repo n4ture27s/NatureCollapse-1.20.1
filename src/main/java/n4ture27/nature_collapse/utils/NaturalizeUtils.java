@@ -253,6 +253,24 @@ public final class NaturalizeUtils {
         }
         targetEntity = resolvedTarget;
 
+        // プレイヤー所持の帰化の剣のフィルター設定を検証（アイテムや経験値オーブ、友好モブなどの保護）
+        if (attacker instanceof Player player) {
+            ItemStack held = player.getMainHandItem();
+            if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
+                if (!InventoryUtil.isSwordTargetAllowed(held, targetEntity)) {
+                    return;
+                }
+            }
+        } else if (targetEntity instanceof ItemEntity || targetEntity instanceof ExperienceOrb) {
+            // 自然発生や非プレイヤー起因でアイテムや経験値オーブが消滅するのを完全に防止
+            return;
+        }
+
+        // 不変の花を持つプレイヤーは完全保護
+        if (targetEntity instanceof Player targetPlayer && InventoryUtil.hasFlower(targetPlayer)) {
+            return;
+        }
+
         // 原初の根源樹アルボリス: 帰化は無条件で通り、即死の代わりにラストスタンドへ強制突入させる
         if (targetEntity instanceof n4ture27.nature_collapse.entity.ArborisEntity arboris) {
             arboris.onNaturalized(attacker);

@@ -58,6 +58,15 @@ public final class CuriosCompat {
     public record CurioSlotInfo(String identifier, int slotIndex) {
     }
 
+    public record CurioFound(ItemStack stack, String identifier, int slotIndex) {
+    }
+
+    @Nullable
+    public static CurioFound findFirstCurio(Player player, Item item) {
+        if (!isLoaded()) return null;
+        return Internal.findFirstCurio(player, item);
+    }
+
     private static final class Internal {
         @SuppressWarnings("removal")
         private static void enqueueImc() {
@@ -70,6 +79,15 @@ public final class CuriosCompat {
             return CuriosApi.getCuriosInventory(player)
                     .map(handler -> handler.findFirstCurio(item).isPresent())
                     .orElse(false);
+        }
+
+        @Nullable
+        private static CurioFound findFirstCurio(Player player, Item item) {
+            return CuriosApi.getCuriosInventory(player)
+                    .resolve()
+                    .flatMap(handler -> handler.findFirstCurio(item))
+                    .map(res -> new CurioFound(res.stack(), res.slotContext().identifier(), res.slotContext().index()))
+                    .orElse(null);
         }
 
         private static void forEachCurio(Player player, Item item, Consumer<ItemStack> consumer) {

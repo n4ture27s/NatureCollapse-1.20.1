@@ -103,8 +103,12 @@ public class EventHandler {
         boolean shouldFly = cfg != null && cfg.flightEnabled() && Config.flowerFlightEnabled;
         float targetSpeed = shouldFly ? cfg.flightSpeedH() : 0.05f;
         boolean needsAbilityUpdate = false;
+        boolean wasGrantedByMod = player.getPersistentData().getBoolean("nature_collapse.granted_flight");
 
         if (shouldFly) {
+            if (!wasGrantedByMod) {
+                player.getPersistentData().putBoolean("nature_collapse.granted_flight", true);
+            }
             if (!player.getAbilities().mayfly) {
                 player.getAbilities().mayfly = true;
                 needsAbilityUpdate = true;
@@ -113,7 +117,9 @@ public class EventHandler {
                 player.getAbilities().setFlyingSpeed(targetSpeed);
                 needsAbilityUpdate = true;
             }
-        } else {
+        } else if (wasGrantedByMod) {
+            // 本MODが飛行を付与していた場合のみ解除し、他MODやバニラによる飛行権限は絶対に阻害しない
+            player.getPersistentData().remove("nature_collapse.granted_flight");
             if (!player.isCreative() && !player.isSpectator()) {
                 if (player.getAbilities().mayfly) {
                     player.getAbilities().mayfly = false;
@@ -140,6 +146,10 @@ public class EventHandler {
             if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
                 net.minecraft.world.entity.Entity target = event.getTarget();
                 if (target != null) {
+                    if (!InventoryUtil.isSwordTargetAllowed(held, target)) {
+                        event.setCanceled(true);
+                        return;
+                    }
                     NaturalizeUtils.naturalize(target, player);
                 }
             }
@@ -158,6 +168,10 @@ public class EventHandler {
             if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
                 LivingEntity target = ev.getEntity();
                 if (target != null && target != attacker) {
+                    if (!InventoryUtil.isSwordTargetAllowed(held, target)) {
+                        ev.setCanceled(true);
+                        return;
+                    }
                     NaturalizeUtils.naturalize(target, attacker);
                 }
             }
@@ -197,6 +211,10 @@ public class EventHandler {
             if (held.getItem() instanceof n4ture27.nature_collapse.item.NaturaLizeSword) {
                 LivingEntity target = ev.getEntity();
                 if (target != null && target != attacker) {
+                    if (!InventoryUtil.isSwordTargetAllowed(held, target)) {
+                        ev.setCanceled(true);
+                        return;
+                    }
                     NaturalizeUtils.naturalize(target, attacker);
                 }
             }

@@ -4,7 +4,8 @@
 	"key.categories.nature_collapse": "Nature Collapse",
 	"key.nature_collapse.open_range_gui": "Open Item Settings GUI",
 
-	"gui.nature_collapse.range_settings": "Range Settings - Naturalize Sword",
+	"gui.nature_collapse.range_settings": "Range & Target Settings - Naturalize Sword",
+	"gui.nature_collapse.target_filtering": "Target Filtering",
 	"gui.nature_collapse.flower_settings": "Effect Matrix - Nature Flower",
 	"gui.nature_collapse.search_effect": "Search effects...",
 

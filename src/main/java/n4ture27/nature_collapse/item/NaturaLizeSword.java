@@ -31,7 +31,9 @@ public class NaturaLizeSword extends SwordItem {
     @Override
     public boolean hurtEnemy(ItemStack pStack, LivingEntity pTarget, LivingEntity pAttacker) {
         if (!pTarget.level().isClientSide()) {
-            NaturalizeUtils.naturalize(pTarget, pAttacker);
+            if (InventoryUtil.isSwordTargetAllowed(pStack, pTarget)) {
+                NaturalizeUtils.naturalize(pTarget, pAttacker);
+            }
         }
         return super.hurtEnemy(pStack, pTarget, pAttacker);
     }
@@ -41,10 +43,12 @@ public class NaturaLizeSword extends SwordItem {
         ItemStack stack = player.getItemInHand(hand);
         if (!level.isClientSide()) {
             double range = InventoryUtil.getSwordRange(stack);
-            EntityHitResult hit = RaycastUtil.entityRaycast(player, range);
+            EntityHitResult hit = RaycastUtil.entityRaycast(player, range, stack);
             if (hit != null && hit.getEntity() != null) {
-                NaturalizeUtils.naturalize(hit.getEntity(), player);
-                return InteractionResultHolder.sidedSuccess(stack, false);
+                if (InventoryUtil.isSwordTargetAllowed(stack, hit.getEntity())) {
+                    NaturalizeUtils.naturalize(hit.getEntity(), player);
+                    return InteractionResultHolder.sidedSuccess(stack, false);
+                }
             }
         }
         return InteractionResultHolder.pass(stack);
@@ -61,10 +65,20 @@ public class NaturaLizeSword extends SwordItem {
             int color = getPulsingNatureColor();
             tooltip.add(Component.translatable("item.nature_collapse.naturalize_sword.desc")
                     .withStyle(style -> style.withColor(color)));
-            tooltip.add(Component.literal("Range: " + currentRange).withStyle(ChatFormatting.AQUA));
+            tooltip.add(Component.literal("Range: " + currentRange + " blocks").withStyle(ChatFormatting.AQUA));
+
+            InventoryUtil.SwordTargetFilter filter = InventoryUtil.getSwordTargetFilter(pStack);
+            tooltip.add(Component.literal("Target: ")
+                    .withStyle(ChatFormatting.DARK_GREEN)
+                    .append(Component.literal("Monsters ").withStyle(filter.targetMonsters() ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY))
+                    .append(Component.literal("Passive ").withStyle(filter.targetPassive() ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY))
+                    .append(Component.literal("Players ").withStyle(filter.targetPlayers() ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(filter.targetItemsAndXP() ? "Items/XP " : "").withStyle(ChatFormatting.RED))
+                    .append(Component.literal(filter.targetNonLiving() ? "Misc" : "").withStyle(ChatFormatting.RED))
+            );
         } else {
             tooltip.add(Component.translatable("tooltip.nature_collapse.hold_shift").withStyle(ChatFormatting.YELLOW));
-            tooltip.add(Component.literal("Press [" + getKeyDisplay() + "] to adjust range").withStyle(ChatFormatting.GOLD));
+            tooltip.add(Component.literal("Press [" + getKeyDisplay() + "] to open Sword Settings").withStyle(ChatFormatting.GOLD));
         }
 
         super.appendHoverText(pStack, level, tooltip, flag);
@@ -74,9 +88,11 @@ public class NaturaLizeSword extends SwordItem {
     public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
         if (!entity.level().isClientSide() && entity instanceof Player player) {
             double range = InventoryUtil.getSwordRange(stack);
-            EntityHitResult hit = RaycastUtil.entityRaycast(player, range);
+            EntityHitResult hit = RaycastUtil.entityRaycast(player, range, stack);
             if (hit != null && hit.getEntity() != null) {
-                NaturalizeUtils.naturalize(hit.getEntity(), player);
+                if (InventoryUtil.isSwordTargetAllowed(stack, hit.getEntity())) {
+                    NaturalizeUtils.naturalize(hit.getEntity(), player);
+                }
             }
         }
         return false;

@@ -1,7 +1,10 @@
 package n4ture27.nature_collapse.utils;
 
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -14,6 +17,11 @@ public final class RaycastUtil {
 
     @Nullable
     public static EntityHitResult entityRaycast(Player player, double distance) {
+        return entityRaycast(player, distance, null);
+    }
+
+    @Nullable
+    public static EntityHitResult entityRaycast(Player player, double distance, @Nullable ItemStack sword) {
         if (player == null || distance <= 0.0) {
             return null;
         }
@@ -35,7 +43,11 @@ public final class RaycastUtil {
                 box,
                 entity -> entity != player
                         && !entity.isSpectator()
-                        && !(entity instanceof Player other && InventoryUtil.hasFlower(other))
+                        && (sword != null
+                            ? InventoryUtil.isSwordTargetAllowed(sword, entity)
+                            : !(entity instanceof ItemEntity)
+                                && !(entity instanceof ExperienceOrb)
+                                && !(entity instanceof Player other && InventoryUtil.hasFlower(other)))
         );
     }
 }
